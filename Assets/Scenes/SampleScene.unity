@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 0}
-  m_IndirectSpecularColor: {r: 0.37311953, g: 0.38074014, b: 0.3587274, a: 1}
+  m_IndirectSpecularColor: {r: 0.3731193, g: 0.38073996, b: 0.35872698, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -153,9 +153,14 @@ MonoBehaviour:
   Playfield: {fileID: 8400000, guid: c8b7b751946cdb746af142ca3a44b495, type: 2}
   PlayfieldCamera: {fileID: 1140611485}
   MainCamera: {fileID: 963194227}
+  grid_color: {r: 0.23584908, g: 0.23584908, b: 0.23584908, a: 1}
+  active_color: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
+  inactive_color: {r: 0, g: 1, b: 0, a: 1}
   board_width: 16
   board_height: 16
-  square_size: 60
+  square_size: 32
+  blocks: []
+  level: {fileID: 0}
 --- !u!4 &591572703
 Transform:
   m_ObjectHideFlags: 0
@@ -271,7 +276,7 @@ Camera:
   m_Enabled: 1
   serializedVersion: 2
   m_ClearFlags: 2
-  m_BackGroundColor: {r: 0, g: 0, b: 0, a: 0}
+  m_BackGroundColor: {r: 0.21698111, g: 0.21698111, b: 0.21698111, a: 0}
   m_projectionMatrixMode: 1
   m_GateFitMode: 2
   m_FOVAxisMode: 0

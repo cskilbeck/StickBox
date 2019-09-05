@@ -14,18 +14,24 @@ public class Main : MonoBehaviour
     public RenderTexture Playfield;
     public Camera PlayfieldCamera;
     public Camera MainCamera;
+    public Color grid_color = new Color(0.2f, 0.3f, 0.1f, 1);
+    public Color active_color = Color.yellow;
+    public Color inactive_color = Color.blue;
 
     public int board_width = 16;
     public int board_height = 16;
 
     public int square_size = 32;
 
+    public bool[,] board;
+    public List<GameObject> blocks;
+
+    public Level level;
+
     //////////////////////////////////////////////////////////////////////
 
     int PlayfieldLayerNumber;
 
-    bool[,] board;
-    List<GameObject> blocks;
     bool moving = false;
     float move_amount_remaining = 0;
     Vector2Int move_direction;
@@ -53,7 +59,7 @@ public class Main : MonoBehaviour
 
     //////////////////////////////////////////////////////////////////////
 
-    GameObject create_quad(Color color)
+    public GameObject create_quad(Color color)
     {
         GameObject quad_object = new GameObject();
         quad_object.layer = PlayfieldLayerNumber;
@@ -74,7 +80,6 @@ public class Main : MonoBehaviour
         MeshRenderer quad_renderer = quad_object.AddComponent<MeshRenderer>();
         quad_renderer.material = new Material(Shader.Find("Unlit/Color"));
         quad_renderer.material.SetColor("_Color", color);
-        Debug.Log("Quad created");
         return quad_object;
     }
 
@@ -134,23 +139,23 @@ public class Main : MonoBehaviour
         board = new bool[board_width, board_height];
         blocks = new List<GameObject>();
 
+        level = new Level();
+        level.create_board(this);
+
         int x = board_width / 2;
         int y = board_height / 2;
         board[x, y] = true;
-        board[x + 1, y] = true;
         board[x + 2, y] = true;
-        board[x, y + 1] = true;
+        board[x, y + 2] = true;
+        board[x + 2, y + 2] = true;
 
-        Vector2Int p = new Vector2Int(2, 1);
-        Vector3 r = board_coordinate(p);
-        create_quad(Color.magenta).transform.position = r;
 
-        Debug.Log($"P {p} = {board_coordinate(p)}");
-
-        Color grid_color = new Color(0.2f, 0.3f, 0.1f, 1);
         Color board_color = Color.yellow;
         create_board(board_width, board_height, square_size, board_color);
         create_grid(board_width, board_height, square_size, grid_color, 4);
+
+        blocks[0].GetComponent<Block>().stuck = true;
+        blocks[0].GetComponent<MeshRenderer>().material.SetColor("_Color", Color.green);
 
         moving = false;
         move_amount_remaining = 0;
@@ -181,7 +186,7 @@ public class Main : MonoBehaviour
 
     //////////////////////////////////////////////////////////////////////
 
-    Vector3 board_coordinate(Vector2Int p)
+    public Vector3 board_coordinate(Vector2Int p)
     {
         float x_org = -(board_width * square_size / 2);
         float y_org = -(board_height * square_size / 2);
