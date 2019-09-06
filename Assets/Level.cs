@@ -36,6 +36,8 @@ public class Level : ScriptableObject
         start_blocks.Add(new Vector2Int(12, 2));
         start_blocks.Add(new Vector2Int(12, 3));
         start_blocks.Add(new Vector2Int(2, 3));
+        start_blocks.Add(new Vector2Int(2, 12));
+        start_blocks.Add(new Vector2Int(12, 12));
 
         win_blocks = new List<Vector2Int>();
         win_blocks.Add(new Vector2Int(3, 3));

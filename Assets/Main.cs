@@ -219,10 +219,6 @@ public class Main : MonoBehaviour
         switch(current_mode)
         {
             case game_mode.wait_for_key:
-                foreach (Block b in blocks)
-                {
-                    b.hit = false;
-                }
                 current_move_vector = get_key_movement();
                 if(current_move_vector != Vec2i.zero)
                 {
@@ -258,11 +254,7 @@ public class Main : MonoBehaviour
                             b.quad.GetComponent<MeshRenderer>().material.SetColor("_Color", final_color);
                         }
                     }
-
-                    // x for the y
-                    // z for the x
-
-                    angle_velocity = new Vector3(current_move_vector.y, -current_move_vector.x, 0) * 2;
+                    angle_velocity = new Vector3(current_move_vector.y, -current_move_vector.x, 0) * 4;
                 }
                 else
                 {
@@ -281,21 +273,16 @@ public class Main : MonoBehaviour
                 break;
         }
 
+        // space to reset level
         if (Input.GetKeyDown(KeyCode.Space))
         {
             reset_level();
         }
 
-        if (Input.GetKeyDown(KeyCode.S))
-        {
-            foreach (Block b in blocks)
-            {
-                Debug.Log($"{b.stuck,5}:{b.position.x,3},{b.position.y,3}");
-            }
-        }
-
+        // cube animation
         angle += angle_velocity;
         Cube.transform.rotation = Quaternion.Euler(angle.x, angle.y, angle.z);
-        angle_velocity *= 0.85f;
+        angle_velocity *= 0.95f;
+        angle *= 0.75f;
     }
 }

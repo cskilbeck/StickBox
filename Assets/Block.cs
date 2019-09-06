@@ -10,7 +10,6 @@ public class Block : MonoBehaviour
 
     public Vector2Int position;
     public bool stuck = false;
-    public bool hit = false;
     public GameObject quad;
 
     //////////////////////////////////////////////////////////////////////
