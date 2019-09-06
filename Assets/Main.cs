@@ -21,6 +21,7 @@ public class Main : MonoBehaviour
     public Color stuck_color = Color.yellow;
     public Color moving_color = Color.blue;
     public Color fail_color = Color.red;
+    public Color solution_color = Color.grey;
 
     public int board_width = 16;
     public int board_height = 16;
@@ -32,9 +33,13 @@ public class Main : MonoBehaviour
 
     public Level level;
 
-    //////////////////////////////////////////////////////////////////////
+    public List<GameObject> solution_quads;
 
-    int PlayfieldLayerNumber;
+    List<GameObject> grid_objects;
+
+//////////////////////////////////////////////////////////////////////
+
+int PlayfieldLayerNumber;
 
     Vec2i move_direction;
 
@@ -86,13 +91,13 @@ public class Main : MonoBehaviour
     //////////////////////////////////////////////////////////////////////
     // BOARD COORDINATES
 
-    public Vector3 board_coordinate(Vec2i p)
+    public Vector3 board_coordinate(Vec2i p, float z = 1)
     {
         float x_org = -(board_width * square_size / 2);
         float y_org = -(board_height * square_size / 2);
         float x = p.x * square_size;
         float y = p.y * square_size;
-        return new Vector3(x + x_org, y + y_org, 1);
+        return new Vector3(x + x_org, y + y_org, z);
     }
 
     //////////////////////////////////////////////////////////////////////
@@ -105,8 +110,8 @@ public class Main : MonoBehaviour
         LineRenderer line_renderer = line_object.AddComponent<LineRenderer>();
         line_renderer.SetPositions(new Vector3[]
         {
-            new Vector3(x1, y1, 1),
-            new Vector3(x2, y2, 1),
+            new Vector3(x1, y1, 4),
+            new Vector3(x2, y2, 4),
         });
         line_renderer.widthCurve = new AnimationCurve(new Keyframe[] {
             new Keyframe(0, width),
@@ -134,10 +139,10 @@ public class Main : MonoBehaviour
         MeshFilter mesh_filter = quad_object.AddComponent<MeshFilter>();
         Mesh mesh = new Mesh();
         mesh.vertices = new Vector3[] {
-            new Vector3(0, 0, 1),
-            new Vector3(square_size, 0, 1),
-            new Vector3(0, square_size, 1),
-            new Vector3(square_size, square_size, 1),
+            new Vector3(0, 0, 0),
+            new Vector3(square_size, 0, 0),
+            new Vector3(0, square_size, 0),
+            new Vector3(square_size, square_size, 0),
         };
         mesh.triangles = new int[]
         {
@@ -164,13 +169,22 @@ public class Main : MonoBehaviour
         for (int x = 0; x <= wide; ++x)
         {
             float xx = x * cell_size - w2;
-            create_line(xx, -h2, xx, h2, color, line_width);
+            grid_objects.Add(create_line(xx, -h2, xx, h2, color, line_width));
         }
         for (int y = 0; y <= high; ++y)
         {
             float yy = y * cell_size - h2;
-            create_line(left, yy, right, yy, color, line_width);
+            grid_objects.Add(create_line(left, yy, right, yy, color, line_width));
         }
+    }
+
+    void destroy_grid()
+    {
+        foreach(GameObject o in grid_objects)
+        {
+            Destroy(o);
+        }
+        grid_objects.Clear();
     }
 
     //////////////////////////////////////////////////////////////////////
@@ -178,6 +192,8 @@ public class Main : MonoBehaviour
 
     public void reset_level()
     {
+        destroy_grid();
+
         foreach (Block b in blocks)
         {
             Destroy(b.quad);
@@ -187,6 +203,19 @@ public class Main : MonoBehaviour
 
         level = ScriptableObject.CreateInstance<Level>();
         level.create_board(this);
+
+        if(solution_quads.Count == 0)
+        {
+            foreach (Vec2i s in level.win_blocks)
+            {
+                GameObject block = create_quad(solution_color);
+                block.transform.position = board_coordinate(s, 5);
+                solution_quads.Add(block);
+            }
+
+        }
+
+        create_grid(board_width, board_height, square_size, grid_color, 4);
 
         current_mode = game_mode.wait_for_key;
 
@@ -199,9 +228,11 @@ public class Main : MonoBehaviour
 
     void Start()
     {
+        grid_objects = new List<GameObject>();
+
         PlayfieldLayerNumber = LayerMask.NameToLayer("Playfield");
 
-        create_grid(board_width, board_height, square_size, grid_color, 4);
+        solution_quads = new List<GameObject>();
 
         reset_level();
     }
@@ -264,7 +295,7 @@ public class Main : MonoBehaviour
                         {
                             Vector3 org = board_coordinate(b.position);
                             float d = move_distance * normalized_time * square_size;
-                            Vector3 movement = new Vector3(current_move_vector.x * d, current_move_vector.y * d, 0);
+                            Vector3 movement = new Vector3(current_move_vector.x * d, current_move_vector.y * d, 0.5f);
                             Vector3 new_pos = org + movement;
                             b.quad.transform.position = new_pos;
                         }

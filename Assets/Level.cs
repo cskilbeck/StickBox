@@ -40,10 +40,12 @@ public class Level : ScriptableObject
         start_blocks.Add(new Vector2Int(12, 12));
 
         win_blocks = new List<Vector2Int>();
-        win_blocks.Add(new Vector2Int(3, 3));
-        win_blocks.Add(new Vector2Int(3, 4));
-        win_blocks.Add(new Vector2Int(4, 3));
-        win_blocks.Add(new Vector2Int(4, 4));
+        win_blocks.Add(new Vector2Int(11, 10));
+        win_blocks.Add(new Vector2Int(11, 11));
+        win_blocks.Add(new Vector2Int(11, 12));
+        win_blocks.Add(new Vector2Int(12, 10));
+        win_blocks.Add(new Vector2Int(12, 11));
+        win_blocks.Add(new Vector2Int(12, 12));
 
         start_block = new Vector2Int(2, 2);
 
@@ -57,7 +59,7 @@ public class Level : ScriptableObject
                 block_color = main.stuck_color;
             }
             GameObject block = main.create_quad(block_color);
-            block.transform.position = main.board_coordinate(p);
+            block.transform.position = main.board_coordinate(p, 3);
             block.GetComponent<MeshRenderer>().material.SetColor("_Color", block_color);
             Block b = block.GetComponent<Block>();
             b.stuck = stuck;
@@ -77,7 +79,8 @@ public class Level : ScriptableObject
             if(b.stuck)
             {
                 b.position += direction;
-                b.quad.transform.position = main.board_coordinate(b.position);
+                Vector3 p = main.board_coordinate(b.position, 0.5f);
+                b.quad.transform.position = p;
             }
         }
     }
