@@ -13,6 +13,7 @@ public class Main : MonoBehaviour
     //////////////////////////////////////////////////////////////////////
 
     public GameObject PlayfieldQuad;
+    public GameObject Cube;
     public RenderTexture Playfield;
     public Camera PlayfieldCamera;
     public Camera MainCamera;
@@ -37,6 +38,8 @@ public class Main : MonoBehaviour
     bool moving = false;
     float move_amount_remaining = 0;
     Vec2i move_direction;
+
+    float angle = 0;
 
     //////////////////////////////////////////////////////////////////////
     // KEYBOARD / MOVEMENT
@@ -255,5 +258,16 @@ public class Main : MonoBehaviour
                 Debug.Log($"{b.stuck,5}:{b.position.x,3},{b.position.y,3}");
             }
         }
+
+        
+        if (Input.GetKey(KeyCode.A))
+        {
+            angle += Time.deltaTime * 90;
+        }
+        if (Input.GetKey(KeyCode.D))
+        {
+            angle -= Time.deltaTime * 90;
+        }
+        Cube.transform.rotation = Quaternion.AngleAxis(angle, new Vector3(0, 1, 0));
     }
 }
