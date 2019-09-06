@@ -254,7 +254,7 @@ public class Main : MonoBehaviour
                             b.quad.GetComponent<MeshRenderer>().material.SetColor("_Color", final_color);
                         }
                     }
-                    angle_velocity = new Vector3(current_move_vector.y, -current_move_vector.x, 0) * 4;
+                    angle_velocity = new Vector3(current_move_vector.y, -current_move_vector.x, 0) * 3;
                 }
                 else
                 {
@@ -283,6 +283,6 @@ public class Main : MonoBehaviour
         angle += angle_velocity;
         Cube.transform.rotation = Quaternion.Euler(angle.x, angle.y, angle.z);
         angle_velocity *= 0.95f;
-        angle *= 0.75f;
+        angle *= 0.65f;
     }
 }
