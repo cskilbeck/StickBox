@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 0}
-  m_IndirectSpecularColor: {r: 0.3731193, g: 0.38073996, b: 0.35872698, a: 1}
+  m_IndirectSpecularColor: {r: 0.37311953, g: 0.38074014, b: 0.3587274, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -157,8 +157,8 @@ MonoBehaviour:
   active_color: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
   inactive_color: {r: 0, g: 1, b: 0, a: 1}
   board_width: 16
-  board_height: 16
-  square_size: 32
+  board_height: 12
+  square_size: 64
   blocks: []
   level: {fileID: 0}
 --- !u!4 &591572703

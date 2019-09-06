@@ -4,6 +4,8 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+using Vec2i = UnityEngine.Vector2Int;
+
 //////////////////////////////////////////////////////////////////////
 
 public class Main : MonoBehaviour
@@ -23,8 +25,8 @@ public class Main : MonoBehaviour
 
     public int square_size = 32;
 
-    public bool[,] board;
-    public List<GameObject> blocks;
+    public Block[,] board;
+    public List<Block> blocks;
 
     public Level level;
 
@@ -34,9 +36,55 @@ public class Main : MonoBehaviour
 
     bool moving = false;
     float move_amount_remaining = 0;
-    Vector2Int move_direction;
+    Vec2i move_direction;
 
     //////////////////////////////////////////////////////////////////////
+    // KEYBOARD / MOVEMENT
+
+    KeyCode[] movement_keys = new KeyCode[] { KeyCode.LeftArrow, KeyCode.RightArrow, KeyCode.UpArrow, KeyCode.DownArrow };
+
+    Dictionary<KeyCode, Vec2i> moves = new Dictionary<KeyCode, Vec2i> {
+        {  KeyCode.LeftArrow, Vec2i.left },
+        {  KeyCode.RightArrow, Vec2i.right },
+        {  KeyCode.UpArrow, Vec2i.up },
+        {  KeyCode.DownArrow, Vec2i.down },
+    };
+
+    Vec2i get_movement_from_keycode(KeyCode key)
+    {
+        if (moves.TryGetValue(key, out Vec2i dir))
+        {
+            return dir;
+        }
+        return Vec2i.zero;
+    }
+
+    Vec2i get_key_movement()
+    {
+        foreach (KeyCode key in movement_keys)
+        {
+            if (Input.GetKeyDown(key))
+            {
+                return get_movement_from_keycode(key);
+            }
+        }
+        return Vec2i.zero;
+    }
+
+    //////////////////////////////////////////////////////////////////////
+    // BOARD COORDINATES
+
+    public Vector3 board_coordinate(Vec2i p)
+    {
+        float x_org = -(board_width * square_size / 2);
+        float y_org = -(board_height * square_size / 2);
+        float x = p.x * square_size;
+        float y = p.y * square_size;
+        return new Vector3(x + x_org, y + y_org, 1);
+    }
+
+    //////////////////////////////////////////////////////////////////////
+    // CREATE GAMEOBJECTS
 
     GameObject create_line(float x1, float y1, float x2, float y2, Color color, float width)
     {
@@ -63,6 +111,7 @@ public class Main : MonoBehaviour
     {
         GameObject quad_object = new GameObject();
         quad_object.layer = PlayfieldLayerNumber;
+        Block block = quad_object.AddComponent<Block>();
         MeshFilter mesh_filter = quad_object.AddComponent<MeshFilter>();
         Mesh mesh = new Mesh();
         mesh.vertices = new Vector3[] {
@@ -106,93 +155,34 @@ public class Main : MonoBehaviour
     }
 
     //////////////////////////////////////////////////////////////////////
+    // PLAY LEVEL
 
-    void create_board(int wide, int high, float cell_size, Color color)
+    public void reset_level()
     {
-        float w2 = wide * cell_size / 2;
-        float h2 = high * cell_size / 2;
-
-        for (int y = 0; y < high; ++y)
+        foreach (Block b in blocks)
         {
-            for (int x = 0; x < wide; ++x)
-            {
-                if (board[x, y])
-                {
-                    GameObject block = create_quad(color);
-                    Vector2Int board_pos = new Vector2Int(x, y); ;
-                    block.AddComponent<Block>().position = board_pos;
-                    block.transform.position = board_coordinate(board_pos);
-                    Debug.Log($"{x},{y}");
-                    blocks.Add(block);
-                }
-            }
+            Destroy(b.quad);
         }
-        Debug.Log("Board created");
-    }
+        board = new Block[board_width, board_height];
+        blocks = new List<Block>();
 
-    //////////////////////////////////////////////////////////////////////
-
-    void Start()
-    {
-        PlayfieldLayerNumber = LayerMask.NameToLayer("Playfield");
-
-        board = new bool[board_width, board_height];
-        blocks = new List<GameObject>();
-
-        level = new Level();
+        level = ScriptableObject.CreateInstance<Level>();
         level.create_board(this);
-
-        int x = board_width / 2;
-        int y = board_height / 2;
-        board[x, y] = true;
-        board[x + 2, y] = true;
-        board[x, y + 2] = true;
-        board[x + 2, y + 2] = true;
-
-
-        Color board_color = Color.yellow;
-        create_board(board_width, board_height, square_size, board_color);
-        create_grid(board_width, board_height, square_size, grid_color, 4);
-
-        blocks[0].GetComponent<Block>().stuck = true;
-        blocks[0].GetComponent<MeshRenderer>().material.SetColor("_Color", Color.green);
 
         moving = false;
         move_amount_remaining = 0;
     }
 
     //////////////////////////////////////////////////////////////////////
+    // START
 
-    Vector2Int get_key_movement()
+    void Start()
     {
-        if (Input.GetKeyDown(KeyCode.LeftArrow))
-        {
-            return Vector2Int.left;
-        }
-        if (Input.GetKeyDown(KeyCode.RightArrow))
-        {
-            return Vector2Int.right;
-        }
-        if (Input.GetKeyDown(KeyCode.UpArrow))
-        {
-            return Vector2Int.up;
-        }
-        if (Input.GetKeyDown(KeyCode.DownArrow))
-        {
-            return Vector2Int.down;
-        }
-        return Vector2Int.zero;
-    }
+        PlayfieldLayerNumber = LayerMask.NameToLayer("Playfield");
 
-    //////////////////////////////////////////////////////////////////////
+        create_grid(board_width, board_height, square_size, grid_color, 4);
 
-    public Vector3 board_coordinate(Vector2Int p)
-    {
-        float x_org = -(board_width * square_size / 2);
-        float y_org = -(board_height * square_size / 2);
-        float x = p.x * square_size;
-        float y = p.y * square_size;
-        return new Vector3(x + x_org, y + y_org, 1);
+        reset_level();
     }
 
     //////////////////////////////////////////////////////////////////////
@@ -203,8 +193,8 @@ public class Main : MonoBehaviour
         //PlayfieldQuad.transform.rotation = Quaternion.AngleAxis(t, new Vector3(0, 0, 1));
         if (!moving)
         {
-            Vector2Int movement = get_key_movement();
-            if (movement != Vector2Int.zero)
+            Vec2i movement = get_key_movement();
+            if (movement != Vec2i.zero)
             {
                 move_direction = movement;
                 move_amount_remaining = 0;
@@ -223,27 +213,46 @@ public class Main : MonoBehaviour
                 move_amount_remaining = 0.0f;
                 moving = false;
 
-                foreach (GameObject block in blocks)
+                foreach (Block b in blocks)
                 {
-                    Block b = block.GetComponent<Block>();
-                    board[b.position.x, b.position.y] = false;
-                    b.position += move_direction;
-                    block.transform.position = board_coordinate(b.position);
+                    if (!b.stuck)
+                    {
+                        board[b.position.x, b.position.y] = null;
+                        b.position += move_direction;
+                        b.quad.transform.position = board_coordinate(b.position);
+                    }
                 }
-                foreach (GameObject block in blocks)
+                foreach (Block b in blocks)
                 {
-                    Block b = block.GetComponent<Block>();
-                    board[b.position.x, b.position.y] = true;
+                    if (!b.stuck)
+                    {
+                        board[b.position.x, b.position.y] = b;
+                    }
                 }
             }
             else
             {
-                foreach (GameObject block in blocks)
+                foreach (Block b in blocks)
                 {
-                    Block b = block.GetComponent<Block>();
-                    Vector3 vel = new Vector3(move_direction.x, move_direction.y, 0) * square_size;
-                    block.transform.position = board_coordinate(b.position) + vel * move_amount_remaining;
+                    if (!b.stuck)
+                    {
+                        Vector3 vel = new Vector3(move_direction.x, move_direction.y, 0) * square_size;
+                        b.quad.transform.position = board_coordinate(b.position) + vel * move_amount_remaining;
+                    }
                 }
+            }
+        }
+
+        if (Input.GetKeyDown(KeyCode.Space))
+        {
+            reset_level();
+        }
+
+        if (Input.GetKeyDown(KeyCode.S))
+        {
+            foreach (Block b in blocks)
+            {
+                Debug.Log($"{b.stuck,5}:{b.position.x,3},{b.position.y,3}");
             }
         }
     }
