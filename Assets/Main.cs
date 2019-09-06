@@ -22,6 +22,7 @@ public class Main : MonoBehaviour
     public Color moving_color = Color.blue;
     public Color fail_color = Color.red;
     public Color solution_color = Color.grey;
+    public float grid_line_width = 2;
 
     public int board_width = 16;
     public int board_height = 16;
@@ -215,7 +216,7 @@ int PlayfieldLayerNumber;
 
         }
 
-        create_grid(board_width, board_height, square_size, grid_color, 4);
+        create_grid(board_width, board_height, square_size, grid_color, grid_line_width);
 
         current_mode = game_mode.wait_for_key;
 
@@ -267,7 +268,7 @@ int PlayfieldLayerNumber;
                 float time_span = move_end_time - move_start_time;
                 float delta_time = Time.realtimeSinceStartup - move_start_time;
                 float normalized_time = delta_time / time_span; // 0..1
-                if (normalized_time >= 1.0f)
+                if (normalized_time >= 0.95f)
                 {
                     level.update_block_positions(this, current_move_vector * move_distance);
                     level.update_hit_blocks(this);
@@ -285,7 +286,7 @@ int PlayfieldLayerNumber;
                             b.quad.GetComponent<MeshRenderer>().material.SetColor("_Color", final_color);
                         }
                     }
-                    angle_velocity = new Vector3(current_move_vector.y, -current_move_vector.x, 0) * 3;
+                    angle_velocity = new Vector3(current_move_vector.y, -current_move_vector.x, 0) * 2;
                 }
                 else
                 {
