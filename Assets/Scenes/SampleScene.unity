@@ -232,11 +232,12 @@ MonoBehaviour:
   Playfield: {fileID: 8400000, guid: c8b7b751946cdb746af142ca3a44b495, type: 2}
   PlayfieldCamera: {fileID: 1140611485}
   MainCamera: {fileID: 963194227}
-  grid_color: {r: 0, g: 0.301, b: 0.058789063, a: 1}
+  grid_color: {r: 0, g: 0.4339623, b: 0.08369268, a: 1}
   stuck_color: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
   moving_color: {r: 0, g: 0, b: 1, a: 1}
   fail_color: {r: 1, g: 0, b: 0, a: 1}
-  solution_color: {r: 0.5, g: 0.5, b: 0.5, a: 1}
+  solution_color: {r: 0.09433961, g: 0.09433961, b: 0.09433961, a: 1}
+  grid_line_width: 6
   board_width: 16
   board_height: 16
   square_size: 58
