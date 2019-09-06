@@ -18,8 +18,9 @@ public class Main : MonoBehaviour
     public Camera PlayfieldCamera;
     public Camera MainCamera;
     public Color grid_color = new Color(0.2f, 0.3f, 0.1f, 1);
-    public Color active_color = Color.yellow;
-    public Color inactive_color = Color.blue;
+    public Color stuck_color = Color.yellow;
+    public Color moving_color = Color.blue;
+    public Color fail_color = Color.red;
 
     public int board_width = 16;
     public int board_height = 16;
@@ -35,11 +36,19 @@ public class Main : MonoBehaviour
 
     int PlayfieldLayerNumber;
 
-    bool moving = false;
-    float move_amount_remaining = 0;
     Vec2i move_direction;
 
-    float angle = 0;
+    Vector3 angle;
+    Vector3 angle_velocity;
+
+    enum game_mode
+    {
+        wait_for_key,
+        move_blocks,
+        failed
+    }
+
+    game_mode current_mode;
 
     //////////////////////////////////////////////////////////////////////
     // KEYBOARD / MOVEMENT
@@ -108,6 +117,13 @@ public class Main : MonoBehaviour
         return line_object;
     }
 
+    float lerp(float x)
+    {
+        float x2 = x * x;
+        float x3 = x2 * x;
+        return 3 * x2 - 2 * x3;
+    }
+
     //////////////////////////////////////////////////////////////////////
 
     public GameObject create_quad(Color color)
@@ -172,8 +188,10 @@ public class Main : MonoBehaviour
         level = ScriptableObject.CreateInstance<Level>();
         level.create_board(this);
 
-        moving = false;
-        move_amount_remaining = 0;
+        current_mode = game_mode.wait_for_key;
+
+        angle = new Vector3(0, 0, 0);
+        angle_velocity = new Vector3(0, 0, 0);
     }
 
     //////////////////////////////////////////////////////////////////////
@@ -190,60 +208,77 @@ public class Main : MonoBehaviour
 
     //////////////////////////////////////////////////////////////////////
 
+    float move_start_time;  // wall time when movement started
+    float move_end_time;  // wall time when movement should be complete
+    Vec2i current_move_vector;
+    Level.move_result current_move_result;
+    int move_distance;
+
     void Update()
     {
-        //float t = Mathf.Sin(Time.realtimeSinceStartup * 4) * 8;
-        //PlayfieldQuad.transform.rotation = Quaternion.AngleAxis(t, new Vector3(0, 0, 1));
-        if (!moving)
+        switch(current_mode)
         {
-            Vec2i movement = get_key_movement();
-            if (movement != Vec2i.zero)
-            {
-                move_direction = movement;
-                move_amount_remaining = 0;
-                moving = true;
-            }
-        }
-        // constrain (stop if they try to move off the board)
-
-        // update the blocks
-        if (moving)
-        {
-            move_amount_remaining += Time.deltaTime * 12;
-
-            if (move_amount_remaining > 1.0f)
-            {
-                move_amount_remaining = 0.0f;
-                moving = false;
-
+            case game_mode.wait_for_key:
                 foreach (Block b in blocks)
                 {
-                    if (!b.stuck)
-                    {
-                        board[b.position.x, b.position.y] = null;
-                        b.position += move_direction;
-                        b.quad.transform.position = board_coordinate(b.position);
-                    }
+                    b.hit = false;
                 }
-                foreach (Block b in blocks)
+                current_move_vector = get_key_movement();
+                if(current_move_vector != Vec2i.zero)
                 {
-                    if (!b.stuck)
-                    {
-                        board[b.position.x, b.position.y] = b;
-                    }
+                    current_move_result = level.get_move_result(this, current_move_vector, out move_distance);
+                    move_start_time = Time.realtimeSinceStartup;
+                    move_end_time = move_start_time + (move_distance * 0.033f);
+                    current_mode = game_mode.move_blocks;
                 }
-            }
-            else
-            {
-                foreach (Block b in blocks)
+                break;
+
+            case game_mode.failed:
+                break;
+
+            case game_mode.move_blocks:
+                float time_span = move_end_time - move_start_time;
+                float delta_time = Time.realtimeSinceStartup - move_start_time;
+                float normalized_time = delta_time / time_span; // 0..1
+                if (normalized_time >= 1.0f)
                 {
-                    if (!b.stuck)
+                    level.update_block_positions(this, current_move_vector * move_distance);
+                    level.update_hit_blocks(this);
+                    Color final_color = stuck_color;
+                    current_mode = game_mode.wait_for_key;
+                    if (current_move_result == Level.move_result.hit_side)
                     {
-                        Vector3 vel = new Vector3(move_direction.x, move_direction.y, 0) * square_size;
-                        b.quad.transform.position = board_coordinate(b.position) + vel * move_amount_remaining;
+                        final_color = fail_color;
+                        current_mode = game_mode.failed;
+                    }
+                    foreach (Block b in blocks)
+                    {
+                        if(b.stuck)
+                        {
+                            b.quad.GetComponent<MeshRenderer>().material.SetColor("_Color", final_color);
+                        }
+                    }
+
+                    // x for the y
+                    // z for the x
+
+                    angle_velocity = new Vector3(current_move_vector.y, -current_move_vector.x, 0) * 2;
+                }
+                else
+                {
+                    foreach (Block b in blocks)
+                    {
+                        if (b.stuck)
+                        {
+                            Vector3 org = board_coordinate(b.position);
+                            float d = move_distance * normalized_time * square_size;
+                            Vector3 movement = new Vector3(current_move_vector.x * d, current_move_vector.y * d, 0);
+                            Vector3 new_pos = org + movement;
+                            b.quad.transform.position = new_pos;
+                        }
                     }
                 }
-            }
+                break;
         }
 
         if (Input.GetKeyDown(KeyCode.Space))
@@ -259,15 +294,8 @@ public class Main : MonoBehaviour
             }
         }
 
-        
-        if (Input.GetKey(KeyCode.A))
-        {
-            angle += Time.deltaTime * 90;
-        }
-        if (Input.GetKey(KeyCode.D))
-        {
-            angle -= Time.deltaTime * 90;
-        }
-        Cube.transform.rotation = Quaternion.AngleAxis(angle, new Vector3(0, 1, 0));
+        angle += angle_velocity;
+        Cube.transform.rotation = Quaternion.Euler(angle.x, angle.y, angle.z);
+        angle_velocity *= 0.85f;
     }
 }
