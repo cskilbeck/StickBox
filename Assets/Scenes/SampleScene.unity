@@ -306,20 +306,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0d8c59d49b347fa479854e9cf13a7475, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  PlayfieldQuad: {fileID: 1674923595}
-  Cube: {fileID: 922571101}
-  Playfield: {fileID: 8400000, guid: c8b7b751946cdb746af142ca3a44b495, type: 2}
-  PlayfieldCamera: {fileID: 1140611485}
-  MainCamera: {fileID: 963194227}
-  grid_color: {r: 0, g: 0.4339623, b: 0.08369268, a: 1}
+  main_cube: {fileID: 922571101}
+  grid_color: {r: 0, g: 0.3301887, b: 0.047406353, a: 1}
   stuck_color: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
   moving_color: {r: 0, g: 0, b: 1, a: 1}
   fail_color: {r: 1, g: 0, b: 0, a: 1}
-  solution_color: {r: 0.12, g: 0.12, b: 0.12, a: 1}
-  solution_flash_color: {r: 0, g: 0, b: 0, a: 1}
-  win_color: {r: 1, g: 1, b: 1, a: 1}
+  solution_color: {r: 0.08, g: 0.08, b: 0.08, a: 1}
+  solution_flash_color: {r: 0.3584906, g: 0, b: 0, a: 1}
+  win_color: {r: 0.9743674, g: 1, b: 0.4669811, a: 1}
   save_button: {fileID: 1240018973}
-  grid_line_width: 6
+  grid_line_width: 3
   block_movement_curve:
     serializedVersion: 2
     m_Curve:
@@ -719,7 +715,7 @@ Camera:
   m_Enabled: 1
   serializedVersion: 2
   m_ClearFlags: 2
-  m_BackGroundColor: {r: 0.21698111, g: 0.21698111, b: 0.21698111, a: 0}
+  m_BackGroundColor: {r: 0.161, g: 0.161, b: 0.161, a: 0}
   m_projectionMatrixMode: 1
   m_GateFitMode: 2
   m_FOVAxisMode: 0

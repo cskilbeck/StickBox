@@ -13,13 +13,7 @@ public class Main : MonoBehaviour
 {
     //////////////////////////////////////////////////////////////////////
 
-    public GameObject PlayfieldQuad;
-    public GameObject Cube;
-
-    public RenderTexture Playfield;
-
-    public Camera PlayfieldCamera;
-    public Camera MainCamera;
+    public GameObject main_cube;
 
     public Color grid_color = new Color(0.2f, 0.3f, 0.1f, 1);
     public Color stuck_color = Color.yellow;
@@ -584,7 +578,7 @@ public class Main : MonoBehaviour
 
         // cube animation
         angle += angle_velocity;
-        Cube.transform.rotation = Quaternion.Euler(angle.x, angle.y, angle.z);
+        main_cube.transform.rotation = Quaternion.Euler(angle.x, angle.y, angle.z);
         angle_velocity *= 0.95f;
         angle *= 0.65f;
     }
