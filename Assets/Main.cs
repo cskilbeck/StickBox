@@ -36,11 +36,11 @@ public class Main : MonoBehaviour
 
     public List<GameObject> solution_quads;
 
+    //////////////////////////////////////////////////////////////////////
+
     List<GameObject> grid_objects;
 
-//////////////////////////////////////////////////////////////////////
-
-int PlayfieldLayerNumber;
+    int PlayfieldLayerNumber;
 
     Vec2i move_direction;
 
@@ -179,6 +179,29 @@ int PlayfieldLayerNumber;
         }
     }
 
+    void create_solution_quads()
+    {
+        foreach (Vec2i s in level.win_blocks)
+        {
+            GameObject block = create_quad(solution_color);
+            block.transform.position = board_coordinate(s, 5);
+            solution_quads.Add(block);
+        }
+    }
+
+    //////////////////////////////////////////////////////////////////////
+
+    void destroy_blocks()
+    {
+        foreach (Block b in blocks)
+        {
+            Destroy(b.quad);
+        }
+        blocks.Clear();
+    }
+
+    //////////////////////////////////////////////////////////////////////
+
     void destroy_grid()
     {
         foreach(GameObject o in grid_objects)
@@ -189,37 +212,32 @@ int PlayfieldLayerNumber;
     }
 
     //////////////////////////////////////////////////////////////////////
+
+    void destroy_solution()
+    {
+        foreach (GameObject o in solution_quads)
+        {
+            Destroy(o);
+        }
+        solution_quads.Clear();
+    }
+
+    //////////////////////////////////////////////////////////////////////
     // PLAY LEVEL
 
     public void reset_level()
     {
+        destroy_blocks();
         destroy_grid();
+        destroy_solution();
 
-        foreach (Block b in blocks)
-        {
-            Destroy(b.quad);
-        }
         board = new Block[board_width, board_height];
-        blocks = new List<Block>();
-
         level = ScriptableObject.CreateInstance<Level>();
         level.create_board(this);
-
-        if(solution_quads.Count == 0)
-        {
-            foreach (Vec2i s in level.win_blocks)
-            {
-                GameObject block = create_quad(solution_color);
-                block.transform.position = board_coordinate(s, 5);
-                solution_quads.Add(block);
-            }
-
-        }
-
         create_grid(board_width, board_height, square_size, grid_color, grid_line_width);
+        create_solution_quads();
 
         current_mode = game_mode.wait_for_key;
-
         angle = new Vector3(0, 0, 0);
         angle_velocity = new Vector3(0, 0, 0);
     }
@@ -229,10 +247,10 @@ int PlayfieldLayerNumber;
 
     void Start()
     {
-        grid_objects = new List<GameObject>();
-
         PlayfieldLayerNumber = LayerMask.NameToLayer("Playfield");
 
+        blocks = new List<Block>();
+        grid_objects = new List<GameObject>();
         solution_quads = new List<GameObject>();
 
         reset_level();
