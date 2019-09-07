@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 using Vec2i = UnityEngine.Vector2Int;
 
@@ -14,28 +15,27 @@ public class Main : MonoBehaviour
 
     public GameObject PlayfieldQuad;
     public GameObject Cube;
+
     public RenderTexture Playfield;
+
     public Camera PlayfieldCamera;
     public Camera MainCamera;
+
     public Color grid_color = new Color(0.2f, 0.3f, 0.1f, 1);
     public Color stuck_color = Color.yellow;
     public Color moving_color = Color.blue;
     public Color fail_color = Color.red;
     public Color solution_color = Color.grey;
+    public Color solution_flash_color = Color.white;
+    public Color win_color = Color.black;
+
+    public Button save_button;
+
     public float grid_line_width = 2;
+
     public AnimationCurve block_movement_curve = AnimationCurve.Linear(0, 0, 1, 1);
 
-    public int board_width = 16;
-    public int board_height = 16;
-
     public int square_size = 32;
-
-    public Block[,] board;
-    public List<Block> blocks;
-
-    public Level level;
-
-    public List<GameObject> solution_quads;
 
     //////////////////////////////////////////////////////////////////////
 
@@ -45,21 +45,39 @@ public class Main : MonoBehaviour
         hit_side = 2,
     }
 
+    enum game_mode
+    {
+        wait_for_key,
+        move_blocks,
+        level_complete,
+        failed
+    }
+
+    Level level;
+
     List<GameObject> grid_objects;
+    List<GameObject> solution_quads;
+
+    Block[,] board;
+    List<Block> blocks;
 
     int PlayfieldLayerNumber;
+
+    int board_width;
+    int board_height;
 
     Vec2i move_direction;
 
     Vector3 angle;
     Vector3 angle_velocity;
 
-    enum game_mode
-    {
-        wait_for_key,
-        move_blocks,
-        failed
-    }
+    int win_flash_timer;
+
+    float move_start_time;              // wall time when movement started
+    float move_end_time;                // wall time when movement should be complete
+    Vec2i current_move_vector;          // direction they chose to move
+    move_result current_move_result;    // did it stick to a block or the side
+    int move_distance;                  // how far it can move before hitting a block or the side
 
     game_mode current_mode;
 
@@ -97,6 +115,23 @@ public class Main : MonoBehaviour
     }
 
     //////////////////////////////////////////////////////////////////////
+    // UTILS
+
+    public void set_color(GameObject o, Color c)
+    {
+        o.GetComponent<Renderer>().material.SetColor("_Color", c);
+    }
+
+    //////////////////////////////////////////////////////////////////////
+
+    float lerp(float x)
+    {
+        float x2 = x * x;
+        float x3 = x2 * x;
+        return 3 * x2 - 2 * x3;
+    }
+
+    //////////////////////////////////////////////////////////////////////
     // BOARD COORDINATES
 
     public Vector3 board_coordinate(Vec2i p, float z = 1)
@@ -126,15 +161,8 @@ public class Main : MonoBehaviour
             new Keyframe(1, width)
         });
         line_renderer.material = new Material(Shader.Find("Unlit/Color"));
-        set_color(line_renderer, color);
+        set_color(line_object, color);
         return line_object;
-    }
-
-    float lerp(float x)
-    {
-        float x2 = x * x;
-        float x3 = x2 * x;
-        return 3 * x2 - 2 * x3;
     }
 
     //////////////////////////////////////////////////////////////////////
@@ -160,7 +188,7 @@ public class Main : MonoBehaviour
         mesh_filter.mesh = mesh;
         MeshRenderer quad_renderer = quad_object.AddComponent<MeshRenderer>();
         quad_renderer.material = new Material(Shader.Find("Unlit/Color"));
-        set_color(quad_renderer, color);
+        set_color(quad_object, color);
         return quad_object;
     }
 
@@ -186,6 +214,8 @@ public class Main : MonoBehaviour
         }
     }
 
+    //////////////////////////////////////////////////////////////////////
+
     void create_solution_quads()
     {
         foreach (Vec2i s in level.win_blocks)
@@ -196,12 +226,20 @@ public class Main : MonoBehaviour
         }
     }
 
-    public void set_color(Renderer o, Color c)
+    //////////////////////////////////////////////////////////////////////
+
+    void set_block_position(Block b, Vec2i p)
     {
-        o.material.SetColor("_Color", c);
+        board[b.position.x, b.position.y] = null;
+        b.position = p;
+        board[b.position.x, b.position.y] = b;
+        Vector3 s = board_coordinate(b.position, 0.5f);
+        b.quad.transform.position = s;
     }
 
-    void create_level()
+    //////////////////////////////////////////////////////////////////////
+
+    void create_level_quads()
     {
         foreach (Vec2i p in level.start_blocks)
         {
@@ -213,14 +251,13 @@ public class Main : MonoBehaviour
                 block_color = stuck_color;
             }
             GameObject block = create_quad(block_color);
-            block.transform.position = board_coordinate(p, 3);
-            set_color(block.GetComponent<MeshRenderer>(), block_color);
+            set_color(block, block_color);
             Block b = block.GetComponent<Block>();
-            b.stuck = stuck;
-            b.position = p;
             b.quad = block;
             blocks.Add(b);
-            board[p.x, p.y] = b;
+            b.stuck = stuck;
+            b.position = p; // don't null a random board cell in set_block_position
+            set_block_position(b, p);
         }
     }
 
@@ -261,7 +298,7 @@ public class Main : MonoBehaviour
     // how far can all the non-stuck blocks move before hitting another block or the edge
     // if they hit the edge, it's a fail
 
-    move_result get_move_result(Vector2Int direction, out int distance)
+    move_result get_move_result(Vec2i direction, out int distance)
     {
         int max_move = Math.Max(board_width, board_height);
         int limit = int.MaxValue;
@@ -272,7 +309,7 @@ public class Main : MonoBehaviour
             {
                 for (int i = 1; i < max_move; ++i)
                 {
-                    Vector2Int new_pos = b.position + direction * i;
+                    Vec2i new_pos = b.position + direction * i;
 
                     if (new_pos.x < 0 || new_pos.y < 0 || new_pos.x >= board_width || new_pos.y >= board_height)
                     {
@@ -305,46 +342,43 @@ public class Main : MonoBehaviour
     //////////////////////////////////////////////////////////////////////
     // mark all blocks which are touching stuck blocks as stuck 
 
-    readonly Vector2Int[] stick_offsets = new Vector2Int[]
+    readonly Vec2i[] stick_offsets = new Vec2i[]
     {
-            new Vector2Int(0, -1),
-            new Vector2Int(-1, 0),
-            new Vector2Int(1, 0),
-            new Vector2Int(0, 1),
+        Vec2i.left,
+        Vec2i.right,
+        Vec2i.up,
+        Vec2i.down
     };
+
+    void stick_neighbours(Block b)
+    {
+        b.visited = true;
+        foreach (Vec2i v in stick_offsets)
+        {
+            Vec2i np = b.position + v;
+            if(np.x >= 0 && np.y >= 0 && np.x < board_width && np.y < board_height)
+            {
+                Block c = board[np.x, np.y];
+                if (c != null && !c.visited)
+                {
+                    c.stuck = true;
+                    stick_neighbours(c);
+                }
+            }
+        }
+    }
 
     public void update_hit_blocks()
     {
-        while (true)
+        foreach (Block b in blocks)
         {
-            bool found_neighbour = false;
-
-            foreach (Block b in blocks)
+            b.visited = false;
+        }
+        foreach (Block b in blocks)
+        {
+            if (b.stuck)
             {
-                if (b.stuck)
-                {
-                    foreach (Block c in blocks)
-                    {
-                        if (c != b)
-                        {
-                            if (!c.stuck)
-                            {
-                                Vector2Int d = b.position - c.position;
-                                foreach (Vector2Int v in stick_offsets)
-                                {
-                                    if (v == d)
-                                    {
-                                        c.stuck = true;
-                                        found_neighbour = true;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            if (!found_neighbour)
-            {
+                stick_neighbours(b);
                 break;
             }
         }
@@ -358,11 +392,32 @@ public class Main : MonoBehaviour
         {
             if (b.stuck)
             {
-                b.position += direction;
-                Vector3 p = board_coordinate(b.position, 0.5f);
-                b.quad.transform.position = p;
+                set_block_position(b, b.position + direction);
             }
         }
+    }
+
+    //////////////////////////////////////////////////////////////////////
+
+    bool is_solution_complete()
+    {
+        foreach(Block b in blocks)
+        {
+            bool found = false;
+            foreach(Vec2i v in level.win_blocks)
+            {
+                if(b.position == v)
+                {
+                    found = true;
+                    break;
+                }
+            }
+            if(!found)
+            {
+                return false;
+            }
+        }
+        return true;
     }
 
     //////////////////////////////////////////////////////////////////////
@@ -374,17 +429,25 @@ public class Main : MonoBehaviour
         destroy_grid();
         destroy_solution();
 
-        board = new Block[board_width, board_height];
         level = ScriptableObject.CreateInstance<Level>();
-        level.create_board(this);
+        level.create_board();
+        board_width = level.width;
+        board_height = level.height;
+        board = new Block[board_width, board_height];
 
-        create_level();
+        create_level_quads();
         create_grid(board_width, board_height, square_size, grid_color, grid_line_width);
         create_solution_quads();
 
+        win_flash_timer = 0;
         current_mode = game_mode.wait_for_key;
         angle = new Vector3(0, 0, 0);
         angle_velocity = new Vector3(0, 0, 0);
+    }
+
+    void on_save_click()
+    {
+        Debug.Log("SAV!?");
     }
 
     //////////////////////////////////////////////////////////////////////
@@ -392,6 +455,9 @@ public class Main : MonoBehaviour
 
     void Start()
     {
+        Button btn = save_button.GetComponent<Button>();
+        btn.onClick.AddListener(on_save_click);
+
         PlayfieldLayerNumber = LayerMask.NameToLayer("Playfield");
 
         blocks = new List<Block>();
@@ -402,12 +468,6 @@ public class Main : MonoBehaviour
     }
 
     //////////////////////////////////////////////////////////////////////
-
-    float move_start_time;  // wall time when movement started
-    float move_end_time;  // wall time when movement should be complete
-    Vec2i current_move_vector;
-    move_result current_move_result;
-    int move_distance;
 
     void Update()
     {
@@ -425,6 +485,29 @@ public class Main : MonoBehaviour
                 break;
 
             case game_mode.failed:
+                Color f = solution_color;
+                win_flash_timer = (win_flash_timer + 1) % 10;
+                if (win_flash_timer > 3)
+                {
+                    f = solution_flash_color;
+                }
+                foreach (GameObject o in solution_quads)
+                {
+                    set_color(o, f);
+                }
+                break;
+
+            case game_mode.level_complete:
+                Color c = win_color;
+                win_flash_timer = (win_flash_timer + 1) % 10;
+                if(win_flash_timer > 3)
+                {
+                    c = stuck_color;
+                }
+                foreach(Block b in blocks)
+                {
+                    set_color(b.quad, c);
+                }
                 break;
 
             case game_mode.move_blocks:
@@ -442,11 +525,28 @@ public class Main : MonoBehaviour
                         final_color = fail_color;
                         current_mode = game_mode.failed;
                     }
+                    bool all_stuck = true;
+                    foreach(Block b in blocks)
+                    {
+                        all_stuck &= b.stuck;
+                    }
+                    if (all_stuck)
+                    {
+                        if (is_solution_complete())
+                        {
+                            current_mode = game_mode.level_complete;
+                        }
+                        else
+                        {
+                            final_color = fail_color;
+                            current_mode = game_mode.failed;
+                        }
+                    }
                     foreach (Block b in blocks)
                     {
                         if(b.stuck)
                         {
-                            set_color(b.quad.GetComponent<MeshRenderer>(), final_color);
+                            set_color(b.quad, final_color);
                         }
                     }
                     angle_velocity = new Vector3(current_move_vector.y, -current_move_vector.x, 0) * 2;

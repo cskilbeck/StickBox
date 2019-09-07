@@ -20,10 +20,10 @@ public class Level : ScriptableObject
 
     //////////////////////////////////////////////////////////////////////
 
-    public void create_board(Main main)
+    public void create_board()
     {
-        width = main.board_width;
-        height = main.board_height;
+        width = 16;
+        height = 16;
 
         start_blocks = new List<Vector2Int>();
         start_blocks.Add(new Vector2Int(2, 2));

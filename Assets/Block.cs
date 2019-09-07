@@ -10,6 +10,7 @@ public class Block : MonoBehaviour
 
     public Vector2Int position;
     public bool stuck = false;
+    public bool visited = false;    // for flood fill
     public GameObject quad;
 
     //////////////////////////////////////////////////////////////////////
