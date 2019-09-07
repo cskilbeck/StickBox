@@ -8,17 +8,36 @@ using UnityEngine;
 public class Block
 {
     [Flags]
-    public enum Flags
+    public enum Flags : uint
     {
-        none = 0,
-        is_stuck = 1,
-        was_visited = 2, // more for other crap like hovered, can_move, can_be_selected etc
-        all = 0xff
+        flag_none = 0,
+
+        flag_stuck = 1,
+        flag_visited = 2,
+
+        flag_all = 0xffffffff
     };
 
     public GameObject quad;
     public Vector2Int position;
-    public Flags flags = Flags.none;
+    public Flags flags = Flags.flag_none;
+
+    public bool stuck
+    {
+        get => get(Flags.flag_stuck);
+        set => set_if(value, Flags.flag_stuck);
+    }
+
+    public bool visited
+    {
+        get => get(Flags.flag_visited);
+        set => set_if(value, Flags.flag_visited);
+    }
+
+    bool get(Flags f)
+    {
+        return (flags & f) != 0;
+    }
 
     void set(Flags f)
     {
@@ -30,41 +49,16 @@ public class Block
         flags &= ~f;
     }
 
-    public bool stuck
+    void set_if(bool v, Flags f)
     {
-        get
+        if (v)
         {
-            return (flags & Flags.is_stuck) != 0;
+            set(f);
         }
-        set
+        else
         {
-            if (value)
-            {
-                set(Flags.is_stuck);
-            }
-            else
-            {
-                clr(Flags.is_stuck);
-            }
+            clr(f);
         }
     }
 
-    public bool visited
-    {
-        get
-        {
-            return (flags & Flags.was_visited) != 0;
-        }
-        set
-        {
-            if (value)
-            {
-                set(Flags.was_visited);
-            }
-            else
-            {
-                clr(Flags.was_visited);
-            }
-        }
-    }
 }
