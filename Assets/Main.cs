@@ -171,7 +171,8 @@ public class Main : MonoBehaviour
     {
         GameObject quad_object = new GameObject();
         quad_object.layer = PlayfieldLayerNumber;
-        Block block = quad_object.AddComponent<Block>();
+        //Block block = quad_object.AddComponent<Block>();
+        Block block = new Block();
         MeshFilter mesh_filter = quad_object.AddComponent<MeshFilter>();
         Mesh mesh = new Mesh();
         mesh.vertices = new Vector3[] {
@@ -239,6 +240,14 @@ public class Main : MonoBehaviour
 
     //////////////////////////////////////////////////////////////////////
 
+    Block create_block(Color c)
+    {
+        GameObject quad = create_quad(c);
+        Block b = new Block();
+        b.quad = quad;
+        return b;
+    }
+
     void create_level_quads()
     {
         foreach (Vec2i p in level.start_blocks)
@@ -250,14 +259,12 @@ public class Main : MonoBehaviour
                 stuck = true;
                 block_color = stuck_color;
             }
-            GameObject block = create_quad(block_color);
-            set_color(block, block_color);
-            Block b = block.GetComponent<Block>();
-            b.quad = block;
-            blocks.Add(b);
-            b.stuck = stuck;
-            b.position = p; // don't null a random board cell in set_block_position
-            set_block_position(b, p);
+            Block block = create_block(block_color);
+            set_color(block.quad, block_color);
+            blocks.Add(block);
+            block.stuck = stuck;
+            block.position = p; // don't null a random board cell in set_block_position
+            set_block_position(block, p);
         }
     }
 
