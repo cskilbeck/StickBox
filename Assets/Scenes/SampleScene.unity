@@ -314,6 +314,7 @@ MonoBehaviour:
   solution_color: {r: 0.08, g: 0.08, b: 0.08, a: 1}
   solution_flash_color: {r: 0.3584906, g: 0, b: 0, a: 1}
   win_color: {r: 0.9743674, g: 1, b: 0.4669811, a: 1}
+  color_shader: {fileID: 10755, guid: 0000000000000000f000000000000000, type: 0}
   save_button: {fileID: 1240018973}
   grid_line_width: 3
   block_movement_curve:

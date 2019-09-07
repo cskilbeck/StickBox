@@ -23,6 +23,8 @@ public class Main : MonoBehaviour
     public Color solution_flash_color = Color.white;
     public Color win_color = Color.black;
 
+    public Shader color_shader;
+
     public Button save_button;
 
     public float grid_line_width = 2;
@@ -154,7 +156,7 @@ public class Main : MonoBehaviour
             new Keyframe(0, width),
             new Keyframe(1, width)
         });
-        line_renderer.material = new Material(Shader.Find("Unlit/Color"));
+        line_renderer.material = new Material(color_shader);
         set_color(line_object, color);
         return line_object;
     }
@@ -165,7 +167,6 @@ public class Main : MonoBehaviour
     {
         GameObject quad_object = new GameObject();
         quad_object.layer = PlayfieldLayerNumber;
-        //Block block = quad_object.AddComponent<Block>();
         Block block = new Block();
         MeshFilter mesh_filter = quad_object.AddComponent<MeshFilter>();
         Mesh mesh = new Mesh();
@@ -182,7 +183,7 @@ public class Main : MonoBehaviour
         };
         mesh_filter.mesh = mesh;
         MeshRenderer quad_renderer = quad_object.AddComponent<MeshRenderer>();
-        quad_renderer.material = new Material(Shader.Find("Unlit/Color"));
+        quad_renderer.material = new Material(color_shader);
         set_color(quad_object, color);
         return quad_object;
     }
