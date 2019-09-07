@@ -1,6 +1,6 @@
 ﻿//////////////////////////////////////////////////////////////////////
 
-using System.Collections;
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -23,6 +23,7 @@ public class Main : MonoBehaviour
     public Color fail_color = Color.red;
     public Color solution_color = Color.grey;
     public float grid_line_width = 2;
+    public AnimationCurve block_movement_curve = AnimationCurve.Linear(0, 0, 1, 1);
 
     public int board_width = 16;
     public int board_height = 16;
@@ -37,6 +38,12 @@ public class Main : MonoBehaviour
     public List<GameObject> solution_quads;
 
     //////////////////////////////////////////////////////////////////////
+
+    enum move_result
+    {
+        hit_block = 1,
+        hit_side = 2,
+    }
 
     List<GameObject> grid_objects;
 
@@ -119,7 +126,7 @@ public class Main : MonoBehaviour
             new Keyframe(1, width)
         });
         line_renderer.material = new Material(Shader.Find("Unlit/Color"));
-        line_renderer.material.SetColor("_Color", color);
+        set_color(line_renderer, color);
         return line_object;
     }
 
@@ -153,7 +160,7 @@ public class Main : MonoBehaviour
         mesh_filter.mesh = mesh;
         MeshRenderer quad_renderer = quad_object.AddComponent<MeshRenderer>();
         quad_renderer.material = new Material(Shader.Find("Unlit/Color"));
-        quad_renderer.material.SetColor("_Color", color);
+        set_color(quad_renderer, color);
         return quad_object;
     }
 
@@ -186,6 +193,34 @@ public class Main : MonoBehaviour
             GameObject block = create_quad(solution_color);
             block.transform.position = board_coordinate(s, 5);
             solution_quads.Add(block);
+        }
+    }
+
+    public void set_color(Renderer o, Color c)
+    {
+        o.material.SetColor("_Color", c);
+    }
+
+    void create_level()
+    {
+        foreach (Vec2i p in level.start_blocks)
+        {
+            bool stuck = false;
+            Color block_color = moving_color;
+            if (p == level.start_block)
+            {
+                stuck = true;
+                block_color = stuck_color;
+            }
+            GameObject block = create_quad(block_color);
+            block.transform.position = board_coordinate(p, 3);
+            set_color(block.GetComponent<MeshRenderer>(), block_color);
+            Block b = block.GetComponent<Block>();
+            b.stuck = stuck;
+            b.position = p;
+            b.quad = block;
+            blocks.Add(b);
+            board[p.x, p.y] = b;
         }
     }
 
@@ -223,6 +258,114 @@ public class Main : MonoBehaviour
     }
 
     //////////////////////////////////////////////////////////////////////
+    // how far can all the non-stuck blocks move before hitting another block or the edge
+    // if they hit the edge, it's a fail
+
+    move_result get_move_result(Vector2Int direction, out int distance)
+    {
+        int max_move = Math.Max(board_width, board_height);
+        int limit = int.MaxValue;
+        move_result result = move_result.hit_side;
+        foreach (Block b in blocks)
+        {
+            if (b.stuck)
+            {
+                for (int i = 1; i < max_move; ++i)
+                {
+                    Vector2Int new_pos = b.position + direction * i;
+
+                    if (new_pos.x < 0 || new_pos.y < 0 || new_pos.x >= board_width || new_pos.y >= board_height)
+                    {
+                        if (limit >= i)
+                        {
+                            limit = i - 1;
+                            result = move_result.hit_side;
+                        }
+                    }
+                    else
+                    {
+                        Block t = board[new_pos.x, new_pos.y];
+                        if (t != null && !t.stuck)
+                        {
+                            if ((i - 1) < limit)
+                            {
+                                limit = i - 1;
+                                result = move_result.hit_block;
+                            }
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        distance = limit;
+        return result;
+    }
+
+    //////////////////////////////////////////////////////////////////////
+    // mark all blocks which are touching stuck blocks as stuck 
+
+    readonly Vector2Int[] stick_offsets = new Vector2Int[]
+    {
+            new Vector2Int(0, -1),
+            new Vector2Int(-1, 0),
+            new Vector2Int(1, 0),
+            new Vector2Int(0, 1),
+    };
+
+    public void update_hit_blocks()
+    {
+        while (true)
+        {
+            bool found_neighbour = false;
+
+            foreach (Block b in blocks)
+            {
+                if (b.stuck)
+                {
+                    foreach (Block c in blocks)
+                    {
+                        if (c != b)
+                        {
+                            if (!c.stuck)
+                            {
+                                Vector2Int d = b.position - c.position;
+                                foreach (Vector2Int v in stick_offsets)
+                                {
+                                    if (v == d)
+                                    {
+                                        c.stuck = true;
+                                        found_neighbour = true;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            if (!found_neighbour)
+            {
+                break;
+            }
+        }
+    }
+
+    //////////////////////////////////////////////////////////////////////
+
+    public void update_block_positions(Vec2i direction)
+    {
+        foreach (Block b in blocks)
+        {
+            if (b.stuck)
+            {
+                b.position += direction;
+                Vector3 p = board_coordinate(b.position, 0.5f);
+                b.quad.transform.position = p;
+            }
+        }
+    }
+
+    //////////////////////////////////////////////////////////////////////
     // PLAY LEVEL
 
     public void reset_level()
@@ -234,6 +377,8 @@ public class Main : MonoBehaviour
         board = new Block[board_width, board_height];
         level = ScriptableObject.CreateInstance<Level>();
         level.create_board(this);
+
+        create_level();
         create_grid(board_width, board_height, square_size, grid_color, grid_line_width);
         create_solution_quads();
 
@@ -261,7 +406,7 @@ public class Main : MonoBehaviour
     float move_start_time;  // wall time when movement started
     float move_end_time;  // wall time when movement should be complete
     Vec2i current_move_vector;
-    Level.move_result current_move_result;
+    move_result current_move_result;
     int move_distance;
 
     void Update()
@@ -272,9 +417,9 @@ public class Main : MonoBehaviour
                 current_move_vector = get_key_movement();
                 if(current_move_vector != Vec2i.zero)
                 {
-                    current_move_result = level.get_move_result(this, current_move_vector, out move_distance);
+                    current_move_result = get_move_result(current_move_vector, out move_distance);
                     move_start_time = Time.realtimeSinceStartup;
-                    move_end_time = move_start_time + (move_distance * 0.033f);
+                    move_end_time = move_start_time + (move_distance * 0.02f);
                     current_mode = game_mode.move_blocks;
                 }
                 break;
@@ -288,11 +433,11 @@ public class Main : MonoBehaviour
                 float normalized_time = delta_time / time_span; // 0..1
                 if (normalized_time >= 0.95f)
                 {
-                    level.update_block_positions(this, current_move_vector * move_distance);
-                    level.update_hit_blocks(this);
+                    update_block_positions(current_move_vector * move_distance);
+                    update_hit_blocks();
                     Color final_color = stuck_color;
                     current_mode = game_mode.wait_for_key;
-                    if (current_move_result == Level.move_result.hit_side)
+                    if (current_move_result == move_result.hit_side)
                     {
                         final_color = fail_color;
                         current_mode = game_mode.failed;
@@ -301,7 +446,7 @@ public class Main : MonoBehaviour
                     {
                         if(b.stuck)
                         {
-                            b.quad.GetComponent<MeshRenderer>().material.SetColor("_Color", final_color);
+                            set_color(b.quad.GetComponent<MeshRenderer>(), final_color);
                         }
                     }
                     angle_velocity = new Vector3(current_move_vector.y, -current_move_vector.x, 0) * 2;
@@ -313,7 +458,8 @@ public class Main : MonoBehaviour
                         if (b.stuck)
                         {
                             Vector3 org = board_coordinate(b.position);
-                            float d = move_distance * normalized_time * square_size;
+                            float t = block_movement_curve.Evaluate(normalized_time);
+                            float d = move_distance * t * square_size;
                             Vector3 movement = new Vector3(current_move_vector.x * d, current_move_vector.y * d, 0.5f);
                             Vector3 new_pos = org + movement;
                             b.quad.transform.position = new_pos;

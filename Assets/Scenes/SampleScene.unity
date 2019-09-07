@@ -169,7 +169,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: e1e0f30d403e62c48a40451dfec68bc9, type: 2}
+  - {fileID: 2100000, guid: 173e7f452ccbe5347bbd601cc12fa518, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -238,6 +238,30 @@ MonoBehaviour:
   fail_color: {r: 1, g: 0, b: 0, a: 1}
   solution_color: {r: 0.09433961, g: 0.09433961, b: 0.09433961, a: 1}
   grid_line_width: 6
+  block_movement_curve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: -0.0023498535
+      inSlope: 0.86979795
+      outSlope: 0.86979795
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0.054714754
+    - serializedVersion: 3
+      time: 1
+      value: 1
+      inSlope: 1.4370334
+      outSlope: 1.4370334
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.018626869
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
   board_width: 16
   board_height: 16
   square_size: 58
