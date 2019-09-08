@@ -14,6 +14,9 @@ public class Main : MonoBehaviour
     //////////////////////////////////////////////////////////////////////
 
     public GameObject main_cube;
+    public GameObject front_face;
+
+    public Camera main_camera;
 
     public Color grid_color = new Color(0.2f, 0.3f, 0.1f, 1);
     public Color stuck_color = Color.yellow;
@@ -26,6 +29,7 @@ public class Main : MonoBehaviour
     public Shader color_shader;
 
     public Button save_button;
+    public Button new_level_button;
 
     public float grid_line_width = 2;
 
@@ -46,13 +50,17 @@ public class Main : MonoBehaviour
         wait_for_key,
         move_blocks,
         level_complete,
+        create_solution,
         failed
     }
 
-    Level level;
+    Level loaded_level;
+    Level current_level;
 
     List<GameObject> grid_objects;
     List<GameObject> solution_quads;
+
+    GameObject cursor_quad;
 
     Block[,] board;
     List<Block> blocks;
@@ -61,6 +69,11 @@ public class Main : MonoBehaviour
 
     int board_width;
     int board_height;
+
+    float grid_width;
+    float grid_height;
+
+    Plane playfield_plane;
 
     Vec2i move_direction;
 
@@ -192,8 +205,13 @@ public class Main : MonoBehaviour
 
     void create_grid(int wide, int high, float cell_size, Color color, float line_width)
     {
-        float w2 = wide * cell_size / 2;
-        float h2 = high * cell_size / 2;
+        grid_width = wide * cell_size;
+        grid_height = high * cell_size;
+
+        float w2 = grid_width / 2;
+        float h2 = grid_height / 2;
+
+        Debug.Log($"Grid: {grid_width},{grid_height}");
 
         float left = -w2 - line_width / 2;
         float right = w2 + line_width / 2;
@@ -212,9 +230,28 @@ public class Main : MonoBehaviour
 
     //////////////////////////////////////////////////////////////////////
 
+    Vec2i intersect_front_face(Vector2 mouse_pos)
+    {
+        Ray ray = main_camera.ScreenPointToRay(mouse_pos);
+        if (Physics.Raycast(ray, out RaycastHit hit))
+        {
+            Vector3 hit_pos = hit.transform.InverseTransformPoint(hit.point);
+            float ox = hit_pos.x * 1024 / grid_width;
+            float oy = hit_pos.y * 1024 / grid_height;
+            float mx = (ox * grid_width) + grid_width / 2;
+            float my = (oy * grid_height) + grid_height / 2;
+            Vec2i v = new Vec2i((int)(mx / square_size), (int)(my / square_size));
+            cursor_quad.transform.position = board_coordinate(v);
+            return v;
+        }
+        return new Vec2i(-1,-1);
+    }
+
+    //////////////////////////////////////////////////////////////////////
+
     void create_solution_quads()
     {
-        foreach (Vec2i s in level.win_blocks)
+        foreach (Vec2i s in current_level.win_blocks)
         {
             GameObject block = create_quad(solution_color);
             block.transform.position = board_coordinate(s, 5);
@@ -235,6 +272,13 @@ public class Main : MonoBehaviour
 
     //////////////////////////////////////////////////////////////////////
 
+    void new_level()
+    {
+
+    }
+
+    //////////////////////////////////////////////////////////////////////
+
     Block create_block(Color c)
     {
         GameObject quad = create_quad(c);
@@ -245,11 +289,11 @@ public class Main : MonoBehaviour
 
     void create_level_quads()
     {
-        foreach (Vec2i p in level.start_blocks)
+        foreach (Vec2i p in current_level.start_blocks)
         {
             bool stuck = false;
             Color block_color = moving_color;
-            if (p == level.start_block)
+            if (p == current_level.start_block)
             {
                 stuck = true;
                 block_color = stuck_color;
@@ -406,7 +450,7 @@ public class Main : MonoBehaviour
         foreach(Block b in blocks)
         {
             bool found = false;
-            foreach(Vec2i v in level.win_blocks)
+            foreach(Vec2i v in current_level.win_blocks)
             {
                 if(b.position == v)
                 {
@@ -425,16 +469,16 @@ public class Main : MonoBehaviour
     //////////////////////////////////////////////////////////////////////
     // PLAY LEVEL
 
-    public void reset_level()
+    public void reset_level(Level level)
     {
         destroy_blocks();
         destroy_grid();
         destroy_solution();
 
-        level = ScriptableObject.CreateInstance<Level>();
-        level.create_board();
-        board_width = level.width;
-        board_height = level.height;
+        current_level = Instantiate(level);
+
+        board_width = current_level.width;
+        board_height = current_level.height;
         board = new Block[board_width, board_height];
 
         create_level_quads();
@@ -447,9 +491,23 @@ public class Main : MonoBehaviour
         angle_velocity = new Vector3(0, 0, 0);
     }
 
-    void on_save_click()
+    public void on_reset_level_click()
     {
-        Debug.Log("SAV!?");
+        reset_level(loaded_level);
+    }
+
+    public void on_new_level_click()
+    {
+    }
+
+    public void on_load_level_click()
+    {
+
+    }
+
+    public void on_save_level_click()
+    {
+
     }
 
     //////////////////////////////////////////////////////////////////////
@@ -457,16 +515,18 @@ public class Main : MonoBehaviour
 
     void Start()
     {
-        Button btn = save_button.GetComponent<Button>();
-        btn.onClick.AddListener(on_save_click);
-
         PlayfieldLayerNumber = LayerMask.NameToLayer("Playfield");
 
         blocks = new List<Block>();
         grid_objects = new List<GameObject>();
         solution_quads = new List<GameObject>();
 
-        reset_level();
+        cursor_quad = create_quad(Color.magenta);
+
+        loaded_level = ScriptableObject.CreateInstance<Level>();
+        loaded_level.create_board();
+
+        reset_level(loaded_level);
     }
 
     //////////////////////////////////////////////////////////////////////
@@ -510,6 +570,10 @@ public class Main : MonoBehaviour
                 {
                     set_color(b.quad, c);
                 }
+                break;
+
+            case game_mode.create_solution:
+                
                 break;
 
             case game_mode.move_blocks:
@@ -574,7 +638,12 @@ public class Main : MonoBehaviour
         // space to reset level
         if (Input.GetKeyDown(KeyCode.Space))
         {
-            reset_level();
+            reset_level(loaded_level);
+        }
+
+        if(Input.GetMouseButtonDown(0))
+        {
+            intersect_front_face(Input.mousePosition);
         }
 
         // cube animation
