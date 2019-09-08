@@ -622,6 +622,7 @@ public class Main : MonoBehaviour
                     loaded_level = ScriptableObject.CreateInstance<Level>();
                     loaded_level.create_board(board_width, board_height);
                     current_mode = game_mode.create_solution;
+                    board = new Block[board_width, board_height];
                 }
                 break;
 
