@@ -743,7 +743,7 @@ MonoBehaviour:
   color_shader: {fileID: 10755, guid: 0000000000000000f000000000000000, type: 0}
   save_button: {fileID: 1240018973}
   new_level_button: {fileID: 300543831}
-  grid_line_width: 3
+  grid_line_width: 5
   block_movement_curve:
     serializedVersion: 2
     m_Curve:

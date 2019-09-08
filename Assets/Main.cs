@@ -52,11 +52,13 @@ public class Main : MonoBehaviour
 
     enum game_mode
     {
-        wait_for_key,
-        move_blocks,
-        level_complete,
-        create_solution,
-        failed
+        wait_for_key,       // playing, waiting for a direction
+        move_blocks,        // playing, moving blocks after key press
+        level_complete,     // level is done
+        failed,             // failed (hit edge or something)
+        set_grid_size,      // user selecting grid size
+        create_solution,    // user adding solution blocks
+        setup_moves         // user adding moves
     }
 
     Level loaded_level;
@@ -235,19 +237,29 @@ public class Main : MonoBehaviour
 
     //////////////////////////////////////////////////////////////////////
 
-    Vec2i intersect_front_face(Vector2 mouse_pos)
+    Vector2 intersect_front_face_f(int board_width, int board_height, Vector2 mouse_pos)
     {
         Ray ray = main_camera.ScreenPointToRay(mouse_pos);
         if (Physics.Raycast(ray, out RaycastHit hit))
         {
             Vector3 hit_pos = hit.transform.InverseTransformPoint(hit.point);
-            float ox = hit_pos.x * 1024 / grid_width;
-            float oy = hit_pos.y * 1024 / grid_height;
-            float mx = (ox * grid_width) + grid_width / 2;
-            float my = (oy * grid_height) + grid_height / 2;
-            return new Vec2i((int)(mx / square_size), (int)(my / square_size));
+            float gw = board_width * square_size;
+            float gh = board_height * square_size;
+            float ox = hit_pos.x * 1024 / gw;
+            float oy = hit_pos.y * 1024 / gh;
+            float mx = (ox * gw) + gw / 2;
+            float my = (oy * gh) + gh / 2;
+            return new Vector2(mx / square_size, my / square_size);
         }
-        return new Vec2i(-1,-1);
+        return new Vector2(-1, -1);
+    }
+
+    //////////////////////////////////////////////////////////////////////
+
+    Vec2i intersect_front_face(int board_width, int board_height, Vector2 mouse_pos)
+    {
+        Vector2 v = intersect_front_face_f(board_width, board_height, mouse_pos);
+        return new Vec2i((int)v.x, (int)v.y);
     }
 
     //////////////////////////////////////////////////////////////////////
@@ -484,14 +496,20 @@ public class Main : MonoBehaviour
         board_height = current_level.height;
         board = new Block[board_width, board_height];
 
-        create_level_quads();
-        create_grid(board_width, board_height, square_size, grid_color, grid_line_width);
-        create_solution_quads();
-
-        win_flash_timer = 0;
-        current_mode = game_mode.wait_for_key;
+        if(false)
+        {
+            create_level_quads();
+            create_grid(board_width, board_height, square_size, grid_color, grid_line_width);
+            create_solution_quads();
+            current_mode = game_mode.wait_for_key;
+        }
+        else
+        {
+            current_mode = game_mode.set_grid_size;
+        }
         angle = new Vector3(0, 0, 0);
         angle_velocity = new Vector3(0, 0, 0);
+        win_flash_timer = 0;
     }
 
     public void on_reset_level_click()
@@ -527,7 +545,7 @@ public class Main : MonoBehaviour
         cursor_quad = create_quad(Color.magenta);
 
         loaded_level = ScriptableObject.CreateInstance<Level>();
-        loaded_level.create_board(16, 16);
+        loaded_level.create_board(13, 13);
 
         loaded_level.start_blocks.Add(new Vec2i(2, 2));
         loaded_level.start_blocks.Add(new Vec2i(12, 2));
@@ -552,6 +570,57 @@ public class Main : MonoBehaviour
     {
         switch(current_mode)
         {
+            case game_mode.set_grid_size:
+                Vector2 grid_pos = intersect_front_face_f(16, 16, Input.mousePosition);
+                float w = Mathf.Min(8, Mathf.Max(1.5f, Mathf.Abs(grid_pos.x - 8)));
+                float h = Mathf.Min(8, Mathf.Max(1.5f, Mathf.Abs(grid_pos.y - 8)));
+                destroy_grid();
+                int bw = (int)Mathf.Round(w * 2);
+                int bh = (int)Mathf.Round(h * 2);
+                create_grid(bw, bh, square_size, grid_color, grid_line_width);
+                if(Input.GetMouseButtonDown(0))
+                {
+                    board_width = bw;
+                    board_height = bh;
+                    current_mode = game_mode.create_solution;
+                }
+                break;
+
+            case game_mode.create_solution:
+                Vec2i cp = intersect_front_face(board_width, board_height, Input.mousePosition);
+                if (cp.x >= 0 && cp.y >= 0 && cp.x < board_width && cp.y < board_height)
+                {
+                    Color cursor_color = Color.magenta;
+                    cursor_quad.transform.position = board_coordinate(cp, 0.5f);
+                    // if cursor on top of a solution block, click removes it
+                    if (board[cp.x, cp.y] != null)
+                    {
+                        cursor_color = Color.Lerp(cursor_color, Color.black, 0.5f);
+                    }
+                    if(Input.GetMouseButtonDown(0))
+                    {
+                        cursor_color = Color.white;
+                        if (board[cp.x, cp.y] != null)
+                        {
+                            cursor_color = Color.black;
+                            solution_quads.Remove(board[cp.x, cp.y].quad);
+                            Destroy(board[cp.x, cp.y].quad);
+                            board[cp.x, cp.y] = null;
+                        }
+                        else
+                        {
+                            Block b = new Block();
+                            b.position = cp;
+                            b.quad = create_quad(solution_color);
+                            b.quad.transform.position = board_coordinate(cp);
+                            board[cp.x, cp.y] = b;
+                            solution_quads.Add(b.quad);
+                        }
+                    }
+                    set_color(cursor_quad, cursor_color);
+                }
+                break;
+
             case game_mode.wait_for_key:
                 current_move_vector = get_key_movement();
                 if(current_move_vector != Vec2i.zero)
@@ -587,10 +656,6 @@ public class Main : MonoBehaviour
                 {
                     set_color(b.quad, c);
                 }
-                break;
-
-            case game_mode.create_solution:
-                
                 break;
 
             case game_mode.move_blocks:
@@ -656,15 +721,6 @@ public class Main : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.Space))
         {
             reset_level(loaded_level);
-        }
-
-        if(Input.GetMouseButtonDown(0))
-        {
-            Vec2i grid_pos = intersect_front_face(Input.mousePosition);
-            if(grid_pos.x >= 0 && grid_pos.y >= 0 && grid_pos.x < board_width && grid_pos.y < board_height)
-            {
-                cursor_quad.transform.position = board_coordinate(grid_pos);
-            }
         }
 
         // cube animation
