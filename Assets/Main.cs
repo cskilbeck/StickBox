@@ -58,7 +58,9 @@ public class Main : MonoBehaviour
         failed,             // failed (hit edge or something)
         set_grid_size,      // user selecting grid size
         create_solution,    // user adding solution blocks
-        setup_moves         // user adding moves
+        edit_solution,
+        choose_direction,
+        move_solution
     }
 
     Level loaded_level;
@@ -94,6 +96,8 @@ public class Main : MonoBehaviour
     Vec2i current_move_vector;          // direction they chose to move
     move_result current_move_result;    // did it stick to a block or the side
     int move_distance;                  // how far it can move before hitting a block or the side
+
+    Block hover_block;
 
     game_mode current_mode;
 
@@ -566,6 +570,39 @@ public class Main : MonoBehaviour
 
     //////////////////////////////////////////////////////////////////////
 
+    void choose_unstuck_blocks()
+    {
+        // find the block under the cursor
+        Vec2i hover_pos = intersect_front_face(board_width, board_height, Input.mousePosition);
+        if (hover_pos.x >= 0 && hover_pos.y >= 0 && hover_pos.x < board_width && hover_pos.y < board_height)
+        {
+            hover_block = board[hover_pos.x, hover_pos.y];
+        }
+        if (Input.GetMouseButtonDown(0) && hover_block != null)
+        {
+            set_color(hover_block.quad, moving_color);
+            hover_block.stuck = false;
+        }
+    }
+
+    //////////////////////////////////////////////////////////////////////
+
+    void move_all_stuck_blocks(Vec2i direction)
+    {
+        foreach(Block b in blocks)
+        {
+            if(b.stuck)
+            {
+                board[b.position.x, b.position.y] = null;
+                b.position += direction;
+                b.quad.transform.position = board_coordinate(b.position);
+                board[b.position.x, b.position.y] = b;
+            }
+        }
+    }
+
+    //////////////////////////////////////////////////////////////////////
+
     void Update()
     {
         switch(current_mode)
@@ -582,6 +619,8 @@ public class Main : MonoBehaviour
                 {
                     board_width = bw;
                     board_height = bh;
+                    loaded_level = ScriptableObject.CreateInstance<Level>();
+                    loaded_level.create_board(board_width, board_height);
                     current_mode = game_mode.create_solution;
                 }
                 break;
@@ -592,21 +631,23 @@ public class Main : MonoBehaviour
                 {
                     Color cursor_color = Color.magenta;
                     cursor_quad.transform.position = board_coordinate(cp, 0.5f);
-                    // if cursor on top of a solution block, click removes it
                     if (board[cp.x, cp.y] != null)
                     {
                         cursor_color = Color.Lerp(cursor_color, Color.black, 0.5f);
                     }
-                    if(Input.GetMouseButtonDown(0))
+                    if (Input.GetMouseButtonDown(0))
                     {
                         cursor_color = Color.white;
-                        if (board[cp.x, cp.y] != null)
+                        Block cb = board[cp.x, cp.y];
+                        // if cursor on top of a solution block, click removes it
+                        if (cb != null)
                         {
                             cursor_color = Color.black;
-                            solution_quads.Remove(board[cp.x, cp.y].quad);
-                            Destroy(board[cp.x, cp.y].quad);
+                            solution_quads.Remove(cb.quad);
+                            Destroy(cb.quad);
                             board[cp.x, cp.y] = null;
                         }
+                        // otherwise click adds one (TODO (chs): check it's a valid place to put a block
                         else
                         {
                             Block b = new Block();
@@ -618,6 +659,44 @@ public class Main : MonoBehaviour
                         }
                     }
                     set_color(cursor_quad, cursor_color);
+
+                    // right click moves to next phase (setting moves)
+                    if(Input.GetMouseButtonDown(1))
+                    {
+                        Destroy(cursor_quad);
+                        cursor_quad = null;
+                        foreach (GameObject b in solution_quads)
+                        {
+                            b.transform.position = new Vector3(b.transform.position.x, b.transform.position.y, 5);
+                        }
+                        blocks.Clear();
+                        for(int y=0; y<board_width; ++y)
+                        {
+                            for(int x=0; x<board_width; ++x)
+                            {
+                                Block cb = board[x, y];
+                                if (cb != null)
+                                {
+                                    loaded_level.win_blocks.Add(cb.position);
+                                    cb.quad = create_quad(stuck_color);
+                                    cb.quad.transform.position = board_coordinate(cb.position);
+                                    cb.stuck = true;
+                                    blocks.Add(cb);
+                                }
+                            }
+                        }
+                        current_mode = game_mode.edit_solution;
+                    }
+                }
+                break;
+
+            // TODO (chs): store solution direction thingy
+            case game_mode.edit_solution:
+                choose_unstuck_blocks();
+                Vec2i start_movement = get_key_movement();
+                if (start_movement != Vec2i.zero)
+                {
+                    move_all_stuck_blocks(start_movement);
                 }
                 break;
 
