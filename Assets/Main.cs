@@ -1,4 +1,9 @@
 ﻿//////////////////////////////////////////////////////////////////////
+// 1 set width,height of grid
+// 2 create solution block
+// 3 create moves
+// 4 test moves
+// 5 save
 
 using System;
 using System.Collections.Generic;
@@ -240,9 +245,7 @@ public class Main : MonoBehaviour
             float oy = hit_pos.y * 1024 / grid_height;
             float mx = (ox * grid_width) + grid_width / 2;
             float my = (oy * grid_height) + grid_height / 2;
-            Vec2i v = new Vec2i((int)(mx / square_size), (int)(my / square_size));
-            cursor_quad.transform.position = board_coordinate(v);
-            return v;
+            return new Vec2i((int)(mx / square_size), (int)(my / square_size));
         }
         return new Vec2i(-1,-1);
     }
@@ -524,7 +527,21 @@ public class Main : MonoBehaviour
         cursor_quad = create_quad(Color.magenta);
 
         loaded_level = ScriptableObject.CreateInstance<Level>();
-        loaded_level.create_board();
+        loaded_level.create_board(16, 16);
+
+        loaded_level.start_blocks.Add(new Vec2i(2, 2));
+        loaded_level.start_blocks.Add(new Vec2i(12, 2));
+        loaded_level.start_blocks.Add(new Vec2i(12, 3));
+        loaded_level.start_blocks.Add(new Vec2i(2, 3));
+        loaded_level.start_blocks.Add(new Vec2i(2, 12));
+        loaded_level.start_blocks.Add(new Vec2i(12, 12));
+
+        loaded_level.win_blocks.Add(new Vec2i(11, 10));
+        loaded_level.win_blocks.Add(new Vec2i(11, 11));
+        loaded_level.win_blocks.Add(new Vec2i(11, 12));
+        loaded_level.win_blocks.Add(new Vec2i(12, 10));
+        loaded_level.win_blocks.Add(new Vec2i(12, 11));
+        loaded_level.win_blocks.Add(new Vec2i(12, 12));
 
         reset_level(loaded_level);
     }
@@ -643,7 +660,11 @@ public class Main : MonoBehaviour
 
         if(Input.GetMouseButtonDown(0))
         {
-            intersect_front_face(Input.mousePosition);
+            Vec2i grid_pos = intersect_front_face(Input.mousePosition);
+            if(grid_pos.x >= 0 && grid_pos.y >= 0 && grid_pos.x < board_width && grid_pos.y < board_height)
+            {
+                cursor_quad.transform.position = board_coordinate(grid_pos);
+            }
         }
 
         // cube animation
