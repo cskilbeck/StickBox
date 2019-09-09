@@ -40,6 +40,8 @@ public class Main : MonoBehaviour
     public Button save_button;
     public Button new_level_button;
 
+    public InputField level_name_input_field;
+
     public float grid_line_width = 2;
 
     public AnimationCurve block_movement_curve = AnimationCurve.Linear(0, 0, 1, 1);
@@ -574,14 +576,27 @@ public class Main : MonoBehaviour
 
     public void on_load_level_click()
     {
+        string name = level_name_input_field.text;
+        string asset_name = $"Assets/Levels/level_{name}.asset";
+        loaded_level = AssetDatabase.LoadAssetAtPath<Level>(asset_name);
         reset_level(loaded_level);
         start_level(loaded_level);
     }
 
     public void on_save_level_click()
     {
+        // if it has no name
+        //    get a name from the user
+        // if it already exists
+        //    if they don't want to overwrite it
+        //       return
+        // save it
+
+        string name = level_name_input_field.text;
+        string asset_name = $"Assets/Levels/level_{name}.asset";
         AssetDatabase.CreateFolder("Assets", "Levels");
-        AssetDatabase.CreateAsset(loaded_level, "Assets/Levels/level.asset");
+        AssetDatabase.DeleteAsset(asset_name);
+        AssetDatabase.CreateAsset(loaded_level, asset_name);
     }
 
     //////////////////////////////////////////////////////////////////////
