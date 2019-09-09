@@ -10,18 +10,22 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 400e0d0a81ea6e4448ae238996d50fb2, type: 3}
-  m_Name: level_00
+  m_Name: level_03
   m_EditorClassIdentifier: 
-  width: 6
-  height: 6
+  width: 9
+  height: 9
   start_blocks:
-  - {x: 1, y: 1}
-  - {x: 4, y: 1}
-  - {x: 1, y: 4}
-  - {x: 4, y: 4}
+  - {x: 3, y: 3}
+  - {x: 5, y: 3}
+  - {x: 6, y: 5}
+  - {x: 1, y: 6}
+  - {x: 3, y: 6}
+  - {x: 6, y: 6}
   win_blocks:
   - {x: 3, y: 3}
   - {x: 4, y: 3}
+  - {x: 5, y: 3}
   - {x: 3, y: 4}
   - {x: 4, y: 4}
-  start_block: {x: 1, y: 4}
+  - {x: 5, y: 4}
+  start_block: {x: 1, y: 6}
