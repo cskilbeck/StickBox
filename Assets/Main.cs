@@ -1,12 +1,9 @@
 ﻿//////////////////////////////////////////////////////////////////////
-// 1 set width,height of grid
-// 2 create solution block
-// 3 create moves
 // 4 test moves
-// 5 save
+// 5 save/load
 
 // TODO (chs): fast-forward check solution in the background to determine if a board is valid
-// TODO (chs): undo when building level (?)
+// TODO (chs): undo when building level (just save a copy of the whole damn thing)
 
 using System;
 using System.Collections.Generic;
@@ -52,8 +49,8 @@ public class Main : MonoBehaviour
 
     readonly float cursor_depth = 1.0f;
     readonly float block_depth = 2.0f;
-    readonly float grid_depth = 3.0f;
-    readonly float solution_depth = 4.0f;
+    readonly float grid_depth = 4.0f;
+    readonly float solution_depth = 5.0f;
 
     enum move_result
     {
@@ -207,8 +204,8 @@ public class Main : MonoBehaviour
         LineRenderer line_renderer = parent.AddComponent<LineRenderer>();
         line_renderer.SetPositions(new Vector3[]
         {
-            new Vector3(x1, y1, 4),
-            new Vector3(x2, y2, 4),
+            new Vector3(x1, y1, grid_depth),
+            new Vector3(x2, y2, grid_depth),
         });
         line_renderer.widthCurve = new AnimationCurve(new Keyframe[] {
             new Keyframe(0, width),
@@ -498,10 +495,12 @@ public class Main : MonoBehaviour
         clear_the_board();
         foreach (Block b in blocks)
         {
+            Vec2i new_pos = b.position;
             if (b.stuck)
             {
-                set_block_position(b, b.position + direction);
+                new_pos += direction;
             }
+            set_block_position(b, new_pos);
         }
     }
 
@@ -537,42 +536,42 @@ public class Main : MonoBehaviour
         destroy_grid();
         destroy_solution();
 
-        current_level = Instantiate(level);
-
-        board_width = current_level.width;
-        board_height = current_level.height;
-        board = new Block[board_width, board_height];
-
-        // NORMAL
-        //{
-        //    create_level_quads();
-        //    create_grid(board_width, board_height, square_size, grid_color, grid_line_width);
-        //    create_solution_quads();
-        //    current_mode = game_mode.wait_for_key;
-        //}
-
-        // EDITOR
-        {
-            current_mode = game_mode.set_grid_size;
-        }
+        current_level = null;
 
         angle = new Vector3(0, 0, 0);
         angle_velocity = new Vector3(0, 0, 0);
         win_flash_timer = 0;
     }
 
+    void start_level(Level level)
+    {
+        current_level = new Level(level);
+        board_width = current_level.width;
+        board_height = current_level.height;
+        board = new Block[board_width, board_height];
+
+        create_level_quads();
+        create_grid(board_width, board_height, square_size, grid_color, grid_line_width);
+        create_solution_quads();
+        current_mode = game_mode.wait_for_key;
+    }
+
     public void on_reset_level_click()
     {
         reset_level(loaded_level);
+        current_mode = game_mode.set_grid_size;
     }
 
     public void on_new_level_click()
     {
+        reset_level(loaded_level);
+        current_mode = game_mode.set_grid_size;
     }
 
     public void on_load_level_click()
     {
-
+        reset_level(loaded_level);
+        start_level(loaded_level);
     }
 
     public void on_save_level_click()
@@ -593,8 +592,7 @@ public class Main : MonoBehaviour
 
         cursor_quad = create_quad(Color.magenta, square_size * 0.3f);
 
-        loaded_level = ScriptableObject.CreateInstance<Level>();
-        loaded_level.create_board(13, 13);
+        loaded_level = new Level(13, 13);
 
         loaded_level.start_blocks.Add(new Vec2i(2, 2));
         loaded_level.start_blocks.Add(new Vec2i(12, 2));
@@ -611,6 +609,7 @@ public class Main : MonoBehaviour
         loaded_level.win_blocks.Add(new Vec2i(12, 12));
 
         reset_level(loaded_level);
+        start_level(loaded_level);
     }
 
     //////////////////////////////////////////////////////////////////////
@@ -661,6 +660,21 @@ public class Main : MonoBehaviour
 
     //////////////////////////////////////////////////////////////////////
 
+    int count_stuck_blocks()
+    {
+        int stuck = 0;
+        foreach (Block b in blocks)
+        {
+            if (b.stuck)
+            {
+                stuck += 1;
+            }
+        }
+        return stuck;
+    }
+
+    //////////////////////////////////////////////////////////////////////
+
     void move_all_stuck_blocks(Vec2i direction)
     {
         // check they can move that way
@@ -707,8 +721,7 @@ public class Main : MonoBehaviour
                 {
                     board_width = bw;
                     board_height = bh;
-                    loaded_level = ScriptableObject.CreateInstance<Level>();
-                    loaded_level.create_board(board_width, board_height);
+                    loaded_level = new Level(board_width, board_height);
                     reset_level(loaded_level);
                     current_mode = game_mode.create_solution;
                     board = new Block[board_width, board_height];
@@ -803,6 +816,27 @@ public class Main : MonoBehaviour
                     {
                         move_all_stuck_blocks(start_movement);
                     }
+                }
+                if (count_stuck_blocks() == 1 && Input.GetKeyDown(KeyCode.P))
+                {
+                    // create level and play it
+                    loaded_level.start_blocks.Clear();
+                    foreach (Block b in blocks)
+                    {
+                        loaded_level.start_blocks.Add(b.position);
+                        if (b.stuck)
+                        {
+                            loaded_level.start_block = b.position;
+                        }
+                    }
+                    loaded_level.width = board_width;
+                    loaded_level.height = board_height;
+                    cursor_quad.SetActive(false);
+                    reset_level(loaded_level);
+                    create_level_quads();
+                    create_grid(board_width, board_height, square_size, grid_color, grid_line_width);
+                    create_solution_quads();
+                    current_mode = game_mode.wait_for_key;
                 }
                 break;
 

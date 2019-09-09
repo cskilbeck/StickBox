@@ -1,22 +1,23 @@
 ﻿//////////////////////////////////////////////////////////////////////
 
-using System;
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+using Vec2i = UnityEngine.Vector2Int;
+
 //////////////////////////////////////////////////////////////////////
 
-public class Level : ScriptableObject
+public class Level
 {
     //////////////////////////////////////////////////////////////////////
 
-    public int width;
+    public int width;                                                   // board size in grid squares
     public int height;
-    public List<Vector2Int> start_blocks = new List<Vector2Int>();
-    public List<Vector2Int> win_blocks = new List<Vector2Int>();
-    public Vector2Int start_block = new Vector2Int(2, 2);
-    public LinkedList<KeyCode> solution = new LinkedList<KeyCode>();
+
+    public List<Vec2i> start_blocks = new List<Vec2i>();                // where they are at the beginning
+    public List<Vec2i> win_blocks = new List<Vec2i>();                  // the solution
+    public Vec2i start_block = new Vec2i(2, 2);                         // which block is stuck to start with
+    public LinkedList<KeyCode> solution = new LinkedList<KeyCode>();    // play these keys to solve it (only from the beginning)
 
     //////////////////////////////////////////////////////////////////////
 
@@ -29,15 +30,26 @@ public class Level : ScriptableObject
         solution.Clear();
     }
 
-    //////////////////////////////////////////////////////////////////////
-
-    void Start()
+    public Level(int w, int h)
     {
+        create_board(w, h);
     }
 
-    //////////////////////////////////////////////////////////////////////
-
-    void Update()
+    public Level(Level other)
     {
+        create_board(other.width, other.height);
+        foreach (Vec2i v in other.start_blocks)
+        {
+            start_blocks.Add(v);
+        }
+        foreach (Vec2i v in other.win_blocks)
+        {
+            win_blocks.Add(v);
+        }
+        foreach (KeyCode v in other.solution)
+        {
+            solution.AddLast(v);
+        }
+        start_block = other.start_block;
     }
 }
