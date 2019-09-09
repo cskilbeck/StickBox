@@ -139,7 +139,10 @@ public class Main : MonoBehaviour
 
     public void set_color(GameObject o, Color c)
     {
-        o.GetComponent<Renderer>().material.SetColor("_Color", c);
+        if (o != null)
+        {
+            o.GetComponent<Renderer>().material.SetColor("_Color", c);
+        }
     }
 
     //////////////////////////////////////////////////////////////////////
@@ -149,6 +152,15 @@ public class Main : MonoBehaviour
         float x2 = x * x;
         float x3 = x2 * x;
         return 3 * x2 - 2 * x3;
+    }
+
+    public static void Quit()
+    {
+#if UNITY_EDITOR
+        UnityEditor.EditorApplication.isPlaying = false;
+#else
+        Application.Quit();
+#endif
     }
 
     //////////////////////////////////////////////////////////////////////
@@ -221,8 +233,6 @@ public class Main : MonoBehaviour
 
         float w2 = grid_width / 2;
         float h2 = grid_height / 2;
-
-        Debug.Log($"Grid: {grid_width},{grid_height}");
 
         float left = -w2 - line_width / 2;
         float right = w2 + line_width / 2;
@@ -341,7 +351,7 @@ public class Main : MonoBehaviour
 
     void destroy_grid()
     {
-        foreach(GameObject o in grid_objects)
+        foreach (GameObject o in grid_objects)
         {
             Destroy(o);
         }
@@ -421,7 +431,7 @@ public class Main : MonoBehaviour
         foreach (Vec2i v in stick_offsets)
         {
             Vec2i np = b.position + v;
-            if(np.x >= 0 && np.y >= 0 && np.x < board_width && np.y < board_height)
+            if (np.x >= 0 && np.y >= 0 && np.x < board_width && np.y < board_height)
             {
                 Block c = board[np.x, np.y];
                 if (c != null && !c.visited)
@@ -466,18 +476,18 @@ public class Main : MonoBehaviour
 
     bool is_solution_complete()
     {
-        foreach(Block b in blocks)
+        foreach (Block b in blocks)
         {
             bool found = false;
-            foreach(Vec2i v in current_level.win_blocks)
+            foreach (Vec2i v in current_level.win_blocks)
             {
-                if(b.position == v)
+                if (b.position == v)
                 {
                     found = true;
                     break;
                 }
             }
-            if(!found)
+            if (!found)
             {
                 return false;
             }
@@ -500,7 +510,7 @@ public class Main : MonoBehaviour
         board_height = current_level.height;
         board = new Block[board_width, board_height];
 
-        if(false)
+        if (false)
         {
             create_level_quads();
             create_grid(board_width, board_height, square_size, grid_color, grid_line_width);
@@ -580,6 +590,10 @@ public class Main : MonoBehaviour
         }
         if (Input.GetMouseButtonDown(0) && hover_block != null)
         {
+            if (hover_block.stuck)
+            {
+                move_direction = Vec2i.zero;
+            }
             set_color(hover_block.quad, moving_color);
             hover_block.stuck = false;
         }
@@ -589,9 +603,9 @@ public class Main : MonoBehaviour
 
     void move_all_stuck_blocks(Vec2i direction)
     {
-        foreach(Block b in blocks)
+        foreach (Block b in blocks)
         {
-            if(b.stuck)
+            if (b.stuck)
             {
                 board[b.position.x, b.position.y] = null;
                 b.position += direction;
@@ -605,8 +619,9 @@ public class Main : MonoBehaviour
 
     void Update()
     {
-        switch(current_mode)
+        switch (current_mode)
         {
+            // drag mouse to set size of grid
             case game_mode.set_grid_size:
                 Vector2 grid_pos = intersect_front_face_f(16, 16, Input.mousePosition);
                 float w = Mathf.Min(8, Mathf.Max(1.5f, Mathf.Abs(grid_pos.x - 8)));
@@ -614,24 +629,31 @@ public class Main : MonoBehaviour
                 destroy_grid();
                 int bw = (int)Mathf.Round(w * 2);
                 int bh = (int)Mathf.Round(h * 2);
-                create_grid(bw, bh, square_size, grid_color, grid_line_width);
-                if(Input.GetMouseButtonDown(0))
+                if (Input.GetMouseButtonDown(0))
                 {
                     board_width = bw;
                     board_height = bh;
                     loaded_level = ScriptableObject.CreateInstance<Level>();
                     loaded_level.create_board(board_width, board_height);
+                    reset_level(loaded_level);
                     current_mode = game_mode.create_solution;
                     board = new Block[board_width, board_height];
+                    Debug.Log($"Board is {bw}x{bh}");
                 }
+                create_grid(bw, bh, square_size, grid_color, grid_line_width);
                 break;
 
+            // click some squares to create the solution blocks
             case game_mode.create_solution:
+                cursor_quad.SetActive(true);
                 Vec2i cp = intersect_front_face(board_width, board_height, Input.mousePosition);
                 if (cp.x >= 0 && cp.y >= 0 && cp.x < board_width && cp.y < board_height)
                 {
                     Color cursor_color = Color.magenta;
-                    cursor_quad.transform.position = board_coordinate(cp, 0.5f);
+                    if (cursor_quad != null)
+                    {
+                        cursor_quad.transform.position = board_coordinate(cp, 0.5f);
+                    }
                     if (board[cp.x, cp.y] != null)
                     {
                         cursor_color = Color.Lerp(cursor_color, Color.black, 0.5f);
@@ -662,27 +684,27 @@ public class Main : MonoBehaviour
                     set_color(cursor_quad, cursor_color);
 
                     // right click moves to next phase (setting moves)
-                    if(Input.GetMouseButtonDown(1))
+                    if (Input.GetMouseButtonDown(1))
                     {
-                        Destroy(cursor_quad);
-                        cursor_quad = null;
+                        cursor_quad.SetActive(false);
                         foreach (GameObject b in solution_quads)
                         {
                             b.transform.position = new Vector3(b.transform.position.x, b.transform.position.y, 5);
                         }
                         blocks.Clear();
-                        for(int y=0; y<board_width; ++y)
+                        for (int y = 0; y < board_width; ++y)
                         {
-                            for(int x=0; x<board_width; ++x)
+                            for (int x = 0; x < board_height; ++x)
                             {
                                 Block cb = board[x, y];
                                 if (cb != null)
                                 {
                                     loaded_level.win_blocks.Add(cb.position);
                                     cb.quad = create_quad(stuck_color);
-                                    cb.quad.transform.position = board_coordinate(cb.position);
+                                    cb.quad.transform.position = board_coordinate(cb.position, 0.5f);
                                     cb.stuck = true;
                                     blocks.Add(cb);
+                                    Debug.Log($"Add block at {cb.position}");
                                 }
                             }
                         }
@@ -691,19 +713,27 @@ public class Main : MonoBehaviour
                 }
                 break;
 
+            // create the moves
             // TODO (chs): store solution direction thingy
             case game_mode.edit_solution:
                 choose_unstuck_blocks();
                 Vec2i start_movement = get_key_movement();
                 if (start_movement != Vec2i.zero)
                 {
-                    move_all_stuck_blocks(start_movement);
+                    if (move_direction == Vec2i.zero)
+                    {
+                        move_direction = start_movement;
+                    }
+                    if (move_direction == start_movement)
+                    {
+                        move_all_stuck_blocks(start_movement);
+                    }
                 }
                 break;
 
             case game_mode.wait_for_key:
                 current_move_vector = get_key_movement();
-                if(current_move_vector != Vec2i.zero)
+                if (current_move_vector != Vec2i.zero)
                 {
                     current_move_result = get_move_result(current_move_vector, out move_distance);
                     move_start_time = Time.realtimeSinceStartup;
@@ -728,11 +758,11 @@ public class Main : MonoBehaviour
             case game_mode.level_complete:
                 Color c = win_color;
                 win_flash_timer = (win_flash_timer + 1) % 10;
-                if(win_flash_timer > 3)
+                if (win_flash_timer > 3)
                 {
                     c = stuck_color;
                 }
-                foreach(Block b in blocks)
+                foreach (Block b in blocks)
                 {
                     set_color(b.quad, c);
                 }
@@ -754,7 +784,7 @@ public class Main : MonoBehaviour
                         current_mode = game_mode.failed;
                     }
                     bool all_stuck = true;
-                    foreach(Block b in blocks)
+                    foreach (Block b in blocks)
                     {
                         all_stuck &= b.stuck;
                     }
@@ -772,7 +802,7 @@ public class Main : MonoBehaviour
                     }
                     foreach (Block b in blocks)
                     {
-                        if(b.stuck)
+                        if (b.stuck)
                         {
                             set_color(b.quad, final_color);
                         }
@@ -803,6 +833,11 @@ public class Main : MonoBehaviour
             reset_level(loaded_level);
         }
 
+        // Escape to quit
+        if (Input.GetKeyDown(KeyCode.Escape))
+        {
+            Quit();
+        }
         // cube animation
         angle += angle_velocity;
         main_cube.transform.rotation = Quaternion.Euler(angle.x, angle.y, angle.z);
