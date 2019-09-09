@@ -1,6 +1,7 @@
 ﻿//////////////////////////////////////////////////////////////////////
 // 4 test moves
 // 5 save/load
+// help/playback
 
 // TODO (chs): fast-forward check solution in the background to determine if a board is valid
 // TODO (chs): undo when building level (just save a copy of the whole damn thing)
@@ -13,7 +14,6 @@ using UnityEditor;
 using UnityEngine.UI;
 
 using Vec2i = UnityEngine.Vector2Int;
-using System.Globalization;
 
 //////////////////////////////////////////////////////////////////////
 
@@ -70,7 +70,7 @@ public class Main : MonoBehaviour
         maybe,        // playing, moving blocks after key press
         winner,     // playing, level is done
         failed,             // playing, failed (hit edge or something)
-
+        prepare_to_play,
         set_grid_size,      // editing, selecting grid size
         create_solution,    // editing, adding solution blocks
         edit_solution       // editing, setting level blocks/moves
@@ -119,11 +119,24 @@ public class Main : MonoBehaviour
         get => _current_mode;
         set
         {
-            TextInfo textInfo = new CultureInfo("en-US", false).TextInfo;
             _current_mode = value;
-            set_banner_text(textInfo.ToTitleCase(_current_mode.ToString().Replace('_', ' ')));
+            string s;
+            if(mode_banners.TryGetValue(_current_mode, out s))
+            {
+                set_banner_text(s);
+            }
         }
     }
+
+    Dictionary<game_mode, string> mode_banners = new Dictionary<game_mode, string>()
+    {
+        { game_mode.failed, "Failed!" },
+        { game_mode.prepare_to_play, "Play!" },
+        { game_mode.edit_solution, "Edit the level" },
+        { game_mode.create_solution, "Place your blocks" },
+        { game_mode.winner, "Winner!" },
+        { game_mode.set_grid_size, "Set the size" }
+    };
 
     StringBuilder debug_text_builder = new StringBuilder();
 
@@ -207,13 +220,13 @@ public class Main : MonoBehaviour
     void update_banner_pos()
     {
         float t = (Time.realtimeSinceStartup - banner_text_move_start_time) * 1.5f;
-        if (t > 1)
+        if (t > 3)
         {
             banner_text.SetActive(false);
         }
         else
         {
-            float x = banner_text_movement_curve.Evaluate(t) * 2 - 1;
+            float x = banner_text_movement_curve.Evaluate(t * 0.333f) * 4 - 2;
             Vector3 p = banner_text.transform.position;
             banner_text.transform.position = new Vector3(x, p.y, p.z);
             banner_text.SetActive(true);
@@ -451,6 +464,34 @@ public class Main : MonoBehaviour
         int max_move = Math.Max(board_width, board_height);
         int limit = int.MaxValue;
         move_result result = move_result.hit_side;
+
+        // 1st check for block collides
+        foreach (Block b in blocks)
+        {
+            if (b.stuck)
+            {
+                for (int i = 1; i < max_move; ++i)
+                {
+                    Vec2i new_pos = b.position + direction * i;
+
+                    if (!(new_pos.x < 0 || new_pos.y < 0 || new_pos.x >= board_width || new_pos.y >= board_height))
+                    {
+                        Block t = board[new_pos.x, new_pos.y];
+                        if (t != null && !t.stuck)
+                        {
+                            if ((i - 1) < limit)
+                            {
+                                limit = i - 1;
+                                result = move_result.hit_block;
+                            }
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        // then for side collides
         foreach (Block b in blocks)
         {
             if (b.stuck)
@@ -467,19 +508,6 @@ public class Main : MonoBehaviour
                             result = move_result.hit_side;
                         }
                     }
-                    else
-                    {
-                        Block t = board[new_pos.x, new_pos.y];
-                        if (t != null && !t.stuck)
-                        {
-                            if ((i - 1) < limit)
-                            {
-                                limit = i - 1;
-                                result = move_result.hit_block;
-                            }
-                            break;
-                        }
-                    }
                 }
             }
         }
@@ -488,35 +516,9 @@ public class Main : MonoBehaviour
     }
 
     //////////////////////////////////////////////////////////////////////
-    // mark all blocks which are touching stuck blocks as stuck 
+    // mark all stuck blocks which hit free blocks as stuck 
 
-    readonly Vec2i[] stick_offsets = new Vec2i[]
-    {
-        Vec2i.left,
-        Vec2i.right,
-        Vec2i.up,
-        Vec2i.down
-    };
-
-    void stick_neighbours(Block b)
-    {
-        b.visited = true;
-        foreach (Vec2i v in stick_offsets)
-        {
-            Vec2i np = b.position + v;
-            if (np.x >= 0 && np.y >= 0 && np.x < board_width && np.y < board_height)
-            {
-                Block c = board[np.x, np.y];
-                if (c != null && !c.visited)
-                {
-                    c.stuck = true;
-                    stick_neighbours(c);
-                }
-            }
-        }
-    }
-
-    public void update_hit_blocks()
+    public void update_hit_blocks(Vec2i direction)
     {
         foreach (Block b in blocks)
         {
@@ -524,10 +526,29 @@ public class Main : MonoBehaviour
         }
         foreach (Block b in blocks)
         {
-            if (b.stuck)
+            if (b.stuck && !b.visited)
             {
-                stick_neighbours(b);
-                break;
+                for(int i=1; i<16; ++i)
+                {
+                    Vec2i np = b.position + direction * i;
+                    if (np.x >= 0 && np.y >= 0 && np.x < board_width && np.y < board_height)
+                    {
+                        Block c = board[np.x, np.y];
+                        if (c != null && !c.visited && !c.stuck)
+                        {
+                            c.stuck = true;
+                            c.visited = true;
+                        }
+                        else
+                        {
+                            break;
+                        }
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
             }
         }
     }
@@ -597,7 +618,16 @@ public class Main : MonoBehaviour
         create_level_quads();
         create_grid(board_width, board_height, square_size, grid_color, grid_line_width);
         create_solution_quads();
-        current_mode = game_mode.make_move;
+        current_mode = game_mode.prepare_to_play;
+    }
+
+    Level load_level(string name)
+    {
+#if UNITY_EDITOR
+        return AssetDatabase.LoadAssetAtPath<Level>(name);
+#else
+        return Resources.Load<Level>(name);
+#endif
     }
 
     public void on_reset_level_click()
@@ -619,25 +649,32 @@ public class Main : MonoBehaviour
     {
         string name = level_name_input_field.text;
         string asset_name = $"Assets/Levels/level_{name}.asset";
-        loaded_level = AssetDatabase.LoadAssetAtPath<Level>(asset_name);
-        reset_level(loaded_level);
-        start_level(loaded_level);
+        Level temp = load_level(asset_name);
+        if (temp != null)
+        {
+            loaded_level = temp;
+            reset_level(loaded_level);
+            start_level(loaded_level);
+        }
+        else
+        {
+            set_banner_text($"{name} not found!");
+        }
     }
 
     public void on_save_level_click()
     {
-        // if it has no name
-        //    get a name from the user
-        // if it already exists
-        //    if they don't want to overwrite it
-        //       return
-        // save it
-
+#if UNITY_EDITOR
         string name = level_name_input_field.text;
-        string asset_name = $"Assets/Levels/level_{name}.asset";
-        AssetDatabase.CreateFolder("Assets", "Levels");
+        string folder = "Levels";
+        if(!AssetDatabase.IsValidFolder($"Assets/{folder}"))
+        {
+            AssetDatabase.CreateFolder("Assets", folder);
+        }
+        string asset_name = $"Assets/{folder}/level_{name}.asset";
         AssetDatabase.DeleteAsset(asset_name);
         AssetDatabase.CreateAsset(loaded_level, asset_name);
+#endif
     }
 
     //////////////////////////////////////////////////////////////////////
@@ -906,6 +943,10 @@ public class Main : MonoBehaviour
                 }
                 break;
 
+            case game_mode.prepare_to_play:
+                current_mode = game_mode.make_move;
+                break;
+
             case game_mode.make_move:
                 current_move_vector = get_key_movement();
                 if (current_move_vector != Vec2i.zero)
@@ -950,7 +991,7 @@ public class Main : MonoBehaviour
                 if (normalized_time >= 0.95f)
                 {
                     update_block_positions(current_move_vector * move_distance);
-                    update_hit_blocks();
+                    update_hit_blocks(current_move_vector);
                     Color final_color = stuck_color;
                     current_mode = game_mode.make_move;
                     if (current_move_result == move_result.hit_side)
