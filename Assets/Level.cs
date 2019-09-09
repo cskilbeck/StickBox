@@ -1,5 +1,6 @@
 ﻿//////////////////////////////////////////////////////////////////////
 
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -7,7 +8,8 @@ using Vec2i = UnityEngine.Vector2Int;
 
 //////////////////////////////////////////////////////////////////////
 
-public class Level
+[Serializable]
+public class Level : ScriptableObject
 {
     //////////////////////////////////////////////////////////////////////
 
@@ -25,18 +27,21 @@ public class Level
     {
         width = w;
         height = h;
-        start_blocks.Clear();
-        win_blocks.Clear();
-        solution.Clear();
+        start_blocks = new List<Vec2i>();
+        win_blocks = new List<Vec2i>();
+        start_block = new Vec2i(2, 2);
+        solution = new LinkedList<KeyCode>();
     }
 
     public Level(int w, int h)
     {
+        name = $"Level {w},{h}";
         create_board(w, h);
     }
 
     public Level(Level other)
     {
+        name = other.name;
         create_board(other.width, other.height);
         foreach (Vec2i v in other.start_blocks)
         {

@@ -9,6 +9,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using UnityEngine;
+using UnityEditor;
 using UnityEngine.UI;
 
 using Vec2i = UnityEngine.Vector2Int;
@@ -536,7 +537,7 @@ public class Main : MonoBehaviour
         destroy_grid();
         destroy_solution();
 
-        current_level = null;
+        current_level = level;
 
         angle = new Vector3(0, 0, 0);
         angle_velocity = new Vector3(0, 0, 0);
@@ -545,7 +546,7 @@ public class Main : MonoBehaviour
 
     void start_level(Level level)
     {
-        current_level = new Level(level);
+        current_level = Instantiate(loaded_level);
         board_width = current_level.width;
         board_height = current_level.height;
         board = new Block[board_width, board_height];
@@ -559,12 +560,15 @@ public class Main : MonoBehaviour
     public void on_reset_level_click()
     {
         reset_level(loaded_level);
-        current_mode = game_mode.set_grid_size;
+        start_level(loaded_level);
+        current_mode = game_mode.wait_for_key;
     }
 
     public void on_new_level_click()
     {
         reset_level(loaded_level);
+        loaded_level = ScriptableObject.CreateInstance<Level>();
+        loaded_level.create_board(16, 16);
         current_mode = game_mode.set_grid_size;
     }
 
@@ -576,7 +580,8 @@ public class Main : MonoBehaviour
 
     public void on_save_level_click()
     {
-
+        AssetDatabase.CreateFolder("Assets", "Levels");
+        AssetDatabase.CreateAsset(loaded_level, "Assets/Levels/level.asset");
     }
 
     //////////////////////////////////////////////////////////////////////
@@ -592,7 +597,8 @@ public class Main : MonoBehaviour
 
         cursor_quad = create_quad(Color.magenta, square_size * 0.3f);
 
-        loaded_level = new Level(13, 13);
+        loaded_level = ScriptableObject.CreateInstance<Level>();
+        loaded_level.create_board(13, 13);
 
         loaded_level.start_blocks.Add(new Vec2i(2, 2));
         loaded_level.start_blocks.Add(new Vec2i(12, 2));
@@ -609,7 +615,8 @@ public class Main : MonoBehaviour
         loaded_level.win_blocks.Add(new Vec2i(12, 12));
 
         reset_level(loaded_level);
-        start_level(loaded_level);
+        current_mode = game_mode.set_grid_size;
+        //start_level(loaded_level);
     }
 
     //////////////////////////////////////////////////////////////////////
@@ -721,7 +728,8 @@ public class Main : MonoBehaviour
                 {
                     board_width = bw;
                     board_height = bh;
-                    loaded_level = new Level(board_width, board_height);
+                    loaded_level = ScriptableObject.CreateInstance<Level>();
+                    loaded_level.create_board(board_width, board_height);
                     reset_level(loaded_level);
                     current_mode = game_mode.create_solution;
                     board = new Block[board_width, board_height];
@@ -820,6 +828,8 @@ public class Main : MonoBehaviour
                 if (count_stuck_blocks() == 1 && Input.GetKeyDown(KeyCode.P))
                 {
                     // create level and play it
+                    loaded_level.width = board_width;
+                    loaded_level.height = board_height;
                     loaded_level.start_blocks.Clear();
                     foreach (Block b in blocks)
                     {
@@ -829,10 +839,9 @@ public class Main : MonoBehaviour
                             loaded_level.start_block = b.position;
                         }
                     }
-                    loaded_level.width = board_width;
-                    loaded_level.height = board_height;
                     cursor_quad.SetActive(false);
-                    reset_level(loaded_level);
+                    current_level = Instantiate(loaded_level);
+                    destroy_blocks();
                     create_level_quads();
                     create_grid(board_width, board_height, square_size, grid_color, grid_line_width);
                     create_solution_quads();
@@ -936,10 +945,14 @@ public class Main : MonoBehaviour
                 break;
         }
 
+        debug($"MODE: {current_mode}");
+
         // space to reset level
         if (Input.GetKeyDown(KeyCode.Space))
         {
             reset_level(loaded_level);
+            start_level(loaded_level);
+            current_mode = game_mode.wait_for_key;
         }
 
         // Escape to quit
