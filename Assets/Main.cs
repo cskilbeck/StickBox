@@ -13,6 +13,7 @@ using UnityEditor;
 using UnityEngine.UI;
 
 using Vec2i = UnityEngine.Vector2Int;
+using System.Globalization;
 
 //////////////////////////////////////////////////////////////////////
 
@@ -25,6 +26,7 @@ public class Main : MonoBehaviour
 
     public Camera main_camera;
 
+    public GameObject banner_text;
     public Text debug_text;
 
     public Color grid_color = new Color(0.2f, 0.3f, 0.1f, 1);
@@ -45,6 +47,7 @@ public class Main : MonoBehaviour
     public float grid_line_width = 2;
 
     public AnimationCurve block_movement_curve = AnimationCurve.Linear(0, 0, 1, 1);
+    public AnimationCurve banner_text_movement_curve = AnimationCurve.EaseInOut(0, 0, 1, 1);
 
     public int square_size = 32;
 
@@ -63,9 +66,9 @@ public class Main : MonoBehaviour
 
     enum game_mode
     {
-        wait_for_key,       // playing, waiting for a direction
-        move_blocks,        // playing, moving blocks after key press
-        level_complete,     // playing, level is done
+        make_move,       // playing, waiting for a direction
+        maybe,        // playing, moving blocks after key press
+        winner,     // playing, level is done
         failed,             // playing, failed (hit edge or something)
 
         set_grid_size,      // editing, selecting grid size
@@ -109,9 +112,23 @@ public class Main : MonoBehaviour
 
     Block hover_block;
 
-    game_mode current_mode;
+    game_mode _current_mode;
+
+    game_mode current_mode
+    {
+        get => _current_mode;
+        set
+        {
+            TextInfo textInfo = new CultureInfo("en-US", false).TextInfo;
+            _current_mode = value;
+            set_banner_text(textInfo.ToTitleCase(_current_mode.ToString().Replace('_', ' ')));
+        }
+    }
 
     StringBuilder debug_text_builder = new StringBuilder();
+
+    float banner_text_move_start_time;
+    float banner_text_move_end_time;
 
     //////////////////////////////////////////////////////////////////////
     // KEYBOARD / MOVEMENT
@@ -185,6 +202,30 @@ public class Main : MonoBehaviour
     {
         debug_text.text = debug_text_builder.ToString();
         debug_text_builder.Clear();
+    }
+
+    void update_banner_pos()
+    {
+        float t = (Time.realtimeSinceStartup - banner_text_move_start_time) * 1.5f;
+        if (t > 1)
+        {
+            banner_text.SetActive(false);
+        }
+        else
+        {
+            float x = banner_text_movement_curve.Evaluate(t) * 2 - 1;
+            Vector3 p = banner_text.transform.position;
+            banner_text.transform.position = new Vector3(x, p.y, p.z);
+            banner_text.SetActive(true);
+        }
+    }
+
+    void set_banner_text(string text)
+    {
+        banner_text_move_start_time = Time.realtimeSinceStartup;
+        banner_text_move_end_time = banner_text_move_start_time + 1.0f;
+        banner_text.GetComponent<Text>().text = text;
+        banner_text.SetActive(false);
     }
 
     //////////////////////////////////////////////////////////////////////
@@ -556,14 +597,14 @@ public class Main : MonoBehaviour
         create_level_quads();
         create_grid(board_width, board_height, square_size, grid_color, grid_line_width);
         create_solution_quads();
-        current_mode = game_mode.wait_for_key;
+        current_mode = game_mode.make_move;
     }
 
     public void on_reset_level_click()
     {
         reset_level(loaded_level);
         start_level(loaded_level);
-        current_mode = game_mode.wait_for_key;
+        current_mode = game_mode.make_move;
     }
 
     public void on_new_level_click()
@@ -842,6 +883,7 @@ public class Main : MonoBehaviour
                 }
                 if (count_stuck_blocks() == 1 && Input.GetKeyDown(KeyCode.P))
                 {
+                    set_banner_text("Play!");
                     // create level and play it
                     loaded_level.width = board_width;
                     loaded_level.height = board_height;
@@ -860,18 +902,18 @@ public class Main : MonoBehaviour
                     create_level_quads();
                     create_grid(board_width, board_height, square_size, grid_color, grid_line_width);
                     create_solution_quads();
-                    current_mode = game_mode.wait_for_key;
+                    current_mode = game_mode.make_move;
                 }
                 break;
 
-            case game_mode.wait_for_key:
+            case game_mode.make_move:
                 current_move_vector = get_key_movement();
                 if (current_move_vector != Vec2i.zero)
                 {
                     current_move_result = get_move_result(current_move_vector, out move_distance);
                     move_start_time = Time.realtimeSinceStartup;
                     move_end_time = move_start_time + (move_distance * 0.02f);
-                    current_mode = game_mode.move_blocks;
+                    current_mode = game_mode.maybe;
                 }
                 break;
 
@@ -888,7 +930,7 @@ public class Main : MonoBehaviour
                 }
                 break;
 
-            case game_mode.level_complete:
+            case game_mode.winner:
                 Color c = win_color;
                 win_flash_timer = (win_flash_timer + 1) % 10;
                 if (win_flash_timer > 3)
@@ -901,7 +943,7 @@ public class Main : MonoBehaviour
                 }
                 break;
 
-            case game_mode.move_blocks:
+            case game_mode.maybe:
                 float time_span = move_end_time - move_start_time;
                 float delta_time = Time.realtimeSinceStartup - move_start_time;
                 float normalized_time = delta_time / time_span; // 0..1
@@ -910,7 +952,7 @@ public class Main : MonoBehaviour
                     update_block_positions(current_move_vector * move_distance);
                     update_hit_blocks();
                     Color final_color = stuck_color;
-                    current_mode = game_mode.wait_for_key;
+                    current_mode = game_mode.make_move;
                     if (current_move_result == move_result.hit_side)
                     {
                         final_color = fail_color;
@@ -925,7 +967,7 @@ public class Main : MonoBehaviour
                     {
                         if (is_solution_complete())
                         {
-                            current_mode = game_mode.level_complete;
+                            current_mode = game_mode.winner;
                         }
                         else
                         {
@@ -967,7 +1009,7 @@ public class Main : MonoBehaviour
         {
             reset_level(loaded_level);
             start_level(loaded_level);
-            current_mode = game_mode.wait_for_key;
+            current_mode = game_mode.make_move;
         }
 
         // Escape to quit
@@ -980,6 +1022,8 @@ public class Main : MonoBehaviour
         main_cube.transform.rotation = Quaternion.Euler(angle.x, angle.y, angle.z);
         angle_velocity *= 0.95f;
         angle *= 0.65f;
+
+        update_banner_pos();
 
         debug_end_scene();
     }
