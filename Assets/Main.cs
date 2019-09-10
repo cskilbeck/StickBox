@@ -568,7 +568,7 @@ public class Main : MonoBehaviour
         {
             if (b.stuck && !b.visited)
             {
-                for (int i = 1; i < 16; ++i)
+                for (int i = 1; i < 16; i += 1)
                 {
                     Vec2i np = b.position + direction * i;
                     if (np.x >= 0 && np.y >= 0 && np.x < board_width && np.y < board_height)
@@ -1124,22 +1124,23 @@ public class Main : MonoBehaviour
                 {
                     current_mode = game_mode.prepare_to_play;
                 }
-                else
+                else if(mode_time_elapsed > 0.333f)
                 {
                     current_move_vector = loaded_level.solution[move_enumerator] * -1;
                     move_enumerator -= 1;
                     current_move_result = get_move_result(current_move_vector, out move_distance);
                     move_start_time = Time.realtimeSinceStartup;
-                    move_end_time = move_start_time + (move_distance * 0.05f);
+                    move_end_time = move_start_time + (move_distance * 0.04f);
                     current_mode = game_mode.make_help_move;
                 }
                 break;
 
             case game_mode.make_help_move:
-                if(mode_time_elapsed > 0.25f)
-                {
-                    do_game_move(game_mode.show_solution);
-                }
+                do_game_move(game_mode.show_solution);
+                break;
+
+            case game_mode.maybe:
+                do_game_move(game_mode.make_move);
                 break;
 
             case game_mode.make_move:
@@ -1179,9 +1180,6 @@ public class Main : MonoBehaviour
                 }
                 break;
 
-            case game_mode.maybe:
-                do_game_move(game_mode.make_move);
-                break;
         }
 
         debug($"MODE: {current_mode}");
