@@ -19,7 +19,7 @@ public class Level : ScriptableObject
     public List<Vec2i> start_blocks = new List<Vec2i>();                // where they are at the beginning
     public List<Vec2i> win_blocks = new List<Vec2i>();                  // the solution
     public Vec2i start_block = new Vec2i(2, 2);                         // which block is stuck to start with
-    public LinkedList<KeyCode> solution = new LinkedList<KeyCode>();    // play these keys to solve it (only from the beginning)
+    public LinkedList<Vec2i> solution = new LinkedList<Vec2i>();    // play these keys to solve it (only from the beginning)
 
     //////////////////////////////////////////////////////////////////////
 
@@ -30,7 +30,7 @@ public class Level : ScriptableObject
         start_blocks = new List<Vec2i>();
         win_blocks = new List<Vec2i>();
         start_block = new Vec2i(2, 2);
-        solution = new LinkedList<KeyCode>();
+        solution = new LinkedList<Vec2i>();
     }
 
     public Level(int w, int h)
@@ -51,7 +51,7 @@ public class Level : ScriptableObject
         {
             win_blocks.Add(v);
         }
-        foreach (KeyCode v in other.solution)
+        foreach (Vec2i v in other.solution)
         {
             solution.AddLast(v);
         }

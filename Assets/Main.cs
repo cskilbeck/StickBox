@@ -67,10 +67,13 @@ public class Main : MonoBehaviour
 
     enum game_mode
     {
-        make_move,       // playing, waiting for a direction
-        maybe,        // playing, moving blocks after key press
-        winner,     // playing, level is done
+        make_move,          // playing, waiting for a direction
+        maybe,              // playing, moving blocks after key press
+        winner,             // playing, level is done
         failed,             // playing, failed (hit edge or something)
+        show_solution,      // just show me the solution
+        make_help_move,     // making a move during show_solution
+
         prepare_to_play,
         set_grid_size,      // editing, selecting grid size
         create_solution,    // editing, adding solution blocks
@@ -110,6 +113,8 @@ public class Main : MonoBehaviour
     Vec2i current_move_vector;          // direction they chose to move
     move_result current_move_result;    // did it stick to a block or the side
     int move_distance;                  // how far it can move before hitting a block or the side
+
+    LinkedList<Vec2i>.Enumerator move_enumerator;   // for showing solution
 
     Block hover_block;
 
@@ -638,6 +643,14 @@ public class Main : MonoBehaviour
 #endif
     }
 
+    public void on_help_click()
+    {
+        reset_level(loaded_level);
+        start_level(loaded_level);
+        current_mode = game_mode.show_solution;
+        move_enumerator = loaded_level.solution.GetEnumerator();
+    }
+
     public void on_reset_level_click()
     {
         reset_level(loaded_level);
@@ -716,30 +729,40 @@ public class Main : MonoBehaviour
     }
 
     //////////////////////////////////////////////////////////////////////
+    // TODO (chs): only allow 'connected, edge' blocks to be selected
+    // TODO (chs): don't allow last stuck block to be selected
 
     void choose_unstuck_blocks()
     {
-        // find the block under the cursor
         Vec2i hover_pos = intersect_front_face(board_width, board_height, Input.mousePosition);
-        if (hover_pos.x >= 0 && hover_pos.y >= 0 && hover_pos.x < board_width && hover_pos.y < board_height)
+        hover_block = null;
+        if (count_stuck_blocks() > 1)
         {
-            hover_block = board[hover_pos.x, hover_pos.y];
-            cursor_quad.SetActive(true);
-            cursor_quad.transform.position = board_coordinate(hover_pos, cursor_depth);
+            // find the block under the cursor
+            if (hover_pos.x >= 0 && hover_pos.y >= 0 && hover_pos.x < board_width && hover_pos.y < board_height)
+            {
+                Block b = board[hover_pos.x, hover_pos.y];
+                if (b != null && b.stuck)
+                {
+                    hover_block = b;
+                }
+            }
         }
-        else
+
+        if (hover_block == null)
         {
             cursor_quad.SetActive(false);
         }
-
-        if (hover_block != null && Input.GetMouseButtonDown(0))
+        else
         {
-            if (hover_block.stuck)
+            cursor_quad.SetActive(true);
+            cursor_quad.transform.position = board_coordinate(hover_pos, cursor_depth);
+            if (Input.GetMouseButtonDown(0))
             {
                 move_direction = Vec2i.zero;
+                set_color(hover_block.quad, moving_color);
+                hover_block.stuck = false;
             }
-            set_color(hover_block.quad, moving_color);
-            hover_block.stuck = false;
         }
     }
 
@@ -802,6 +825,73 @@ public class Main : MonoBehaviour
                 b.position += direction;
                 b.quad.transform.position = board_coordinate(b.position, block_depth);
                 board[b.position.x, b.position.y] = b;
+            }
+        }
+    }
+
+    //////////////////////////////////////////////////////////////////////
+
+    void do_game_move(game_mode next_mode)
+    {
+        float time_span = move_end_time - move_start_time;
+        float delta_time = Time.realtimeSinceStartup - move_start_time;
+        float normalized_time = delta_time / time_span; // 0..1
+
+        // arrived at the end of the movement, what happened
+        if (normalized_time >= 0.95f)
+        {
+            // update the blocks anyway
+            update_block_positions(current_move_vector * move_distance);
+            update_hit_blocks(current_move_vector);
+            Color final_color = stuck_color;
+            current_mode = next_mode;
+
+            if (current_move_result == move_result.hit_solution)
+            {
+                current_mode = game_mode.winner;
+                final_color = win_color;
+            }
+            else if (current_move_result == move_result.hit_side)
+            {
+                final_color = fail_color;
+                current_mode = game_mode.failed;
+            }
+            else
+            {
+                // collide and landed on the solution at the same time
+                bool all_stuck = true;
+                foreach (Block b in blocks)
+                {
+                    all_stuck &= b.stuck;
+                }
+                if (all_stuck && is_solution_complete(Vec2i.zero))
+                {
+                    current_mode = game_mode.winner;
+                    final_color = win_color;
+                }
+            }
+            foreach (Block b in blocks)
+            {
+                if (b.stuck)
+                {
+                    set_color(b.quad, final_color);
+                }
+            }
+            angle_velocity = new Vector3(current_move_vector.y, -current_move_vector.x, 0) * 2;
+        }
+        else
+        {
+            foreach (Block b in blocks)
+            {
+                if (b.stuck)
+                {
+                    Vector3 org = board_coordinate(b.position);
+                    float t = block_movement_curve.Evaluate(normalized_time);
+                    float d = move_distance * t * square_size;
+                    Vector3 movement = new Vector3(current_move_vector.x * d, current_move_vector.y * d, block_depth);
+                    Vector3 new_pos = org + movement;
+                    b.quad.transform.position = new_pos;
+                }
             }
         }
     }
@@ -878,6 +968,7 @@ public class Main : MonoBehaviour
                     // right click moves to next phase (setting moves)
                     if (Input.GetMouseButtonDown(1))
                     {
+                        loaded_level.solution.Clear();
                         move_direction = Vec2i.zero;
                         cursor_quad.SetActive(false);
                         foreach (GameObject b in solution_quads)
@@ -910,12 +1001,14 @@ public class Main : MonoBehaviour
             case game_mode.edit_solution:
 
                 choose_unstuck_blocks();
-                Vec2i start_movement = get_key_movement();
+                Vec2i start_movement = get_key_movement();  // check if it's valid to move in this direction
+
                 if (start_movement != Vec2i.zero)
                 {
                     if (move_direction == Vec2i.zero)
                     {
                         move_direction = start_movement;
+                        loaded_level.solution.AddFirst(move_direction);
                     }
                     if (move_direction == start_movement)
                     {
@@ -949,6 +1042,19 @@ public class Main : MonoBehaviour
 
             case game_mode.prepare_to_play:
                 current_mode = game_mode.make_move;
+                break;
+
+            case game_mode.show_solution:
+                current_move_vector = move_enumerator.Current;
+                move_enumerator.MoveNext();
+                current_move_result = get_move_result(current_move_vector, out move_distance);
+                move_start_time = Time.realtimeSinceStartup;
+                move_end_time = move_start_time + (move_distance * 0.02f);
+                current_mode = game_mode.make_help_move;
+                break;
+
+            case game_mode.make_help_move:
+                do_game_move(game_mode.show_solution);
                 break;
 
             case game_mode.make_move:
@@ -989,67 +1095,7 @@ public class Main : MonoBehaviour
                 break;
 
             case game_mode.maybe:
-                float time_span = move_end_time - move_start_time;
-                float delta_time = Time.realtimeSinceStartup - move_start_time;
-                float normalized_time = delta_time / time_span; // 0..1
-
-                // arrived at the end of the movement, what happened
-                if (normalized_time >= 0.95f)
-                {
-                    // update the blocks anyway
-                    update_block_positions(current_move_vector * move_distance);
-                    update_hit_blocks(current_move_vector);
-                    Color final_color = stuck_color;
-                    current_mode = game_mode.make_move;
-
-                    if (current_move_result == move_result.hit_solution)
-                    {
-                        current_mode = game_mode.winner;
-                        final_color = win_color;
-                    }
-                    else if (current_move_result == move_result.hit_side)
-                    {
-                        final_color = fail_color;
-                        current_mode = game_mode.failed;
-                    }
-                    else
-                    {
-                        // collide and landed on the solution at the same time
-                        bool all_stuck = true;
-                        foreach (Block b in blocks)
-                        {
-                            all_stuck &= b.stuck;
-                        }
-                        if (all_stuck && is_solution_complete(Vec2i.zero))
-                        {
-                            current_mode = game_mode.winner;
-                            final_color = win_color;
-                        }
-                    }
-                    foreach (Block b in blocks)
-                    {
-                        if (b.stuck)
-                        {
-                            set_color(b.quad, final_color);
-                        }
-                    }
-                    angle_velocity = new Vector3(current_move_vector.y, -current_move_vector.x, 0) * 2;
-                }
-                else
-                {
-                    foreach (Block b in blocks)
-                    {
-                        if (b.stuck)
-                        {
-                            Vector3 org = board_coordinate(b.position);
-                            float t = block_movement_curve.Evaluate(normalized_time);
-                            float d = move_distance * t * square_size;
-                            Vector3 movement = new Vector3(current_move_vector.x * d, current_move_vector.y * d, block_depth);
-                            Vector3 new_pos = org + movement;
-                            b.quad.transform.position = new_pos;
-                        }
-                    }
-                }
+                do_game_move(game_mode.make_move);
                 break;
         }
 
