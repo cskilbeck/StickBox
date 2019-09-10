@@ -6,6 +6,8 @@
 // TODO (chs): fast-forward check solution in the background to determine if a board is valid
 // TODO (chs): undo when building level (just save a copy of the whole damn thing)
 
+// DONE (chs): don't allow last stuck block to be selected
+
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -643,6 +645,13 @@ public class Main : MonoBehaviour
 #endif
     }
 
+    public void on_export_click()
+    {
+        Debug.LogError("Resources:");
+        UnityEngine.Object[] o = Resources.FindObjectsOfTypeAll(typeof(UnityEngine.Object));
+        Debug.LogError(o);
+    }
+
     public void on_help_click()
     {
         reset_level(loaded_level);
@@ -730,7 +739,6 @@ public class Main : MonoBehaviour
 
     //////////////////////////////////////////////////////////////////////
     // TODO (chs): only allow 'connected, edge' blocks to be selected
-    // TODO (chs): don't allow last stuck block to be selected
 
     void choose_unstuck_blocks()
     {
