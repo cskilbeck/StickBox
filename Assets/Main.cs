@@ -62,6 +62,7 @@ public class Main : MonoBehaviour
     {
         hit_block = 1,
         hit_side = 2,
+        hit_solution = 3
     }
 
     enum game_mode
@@ -121,7 +122,7 @@ public class Main : MonoBehaviour
         {
             _current_mode = value;
             string s;
-            if(mode_banners.TryGetValue(_current_mode, out s))
+            if (mode_banners.TryGetValue(_current_mode, out s))
             {
                 set_banner_text(s);
             }
@@ -466,10 +467,12 @@ public class Main : MonoBehaviour
         move_result result = move_result.hit_side;
 
         // 1st check for block collides
+        int free_blocks = blocks.Count;
         foreach (Block b in blocks)
         {
             if (b.stuck)
             {
+                free_blocks -= 1;
                 for (int i = 1; i < max_move; ++i)
                 {
                     Vec2i new_pos = b.position + direction * i;
@@ -508,6 +511,11 @@ public class Main : MonoBehaviour
                             result = move_result.hit_side;
                         }
                     }
+                    if (free_blocks == 0 && is_solution_complete(direction * i))
+                    {
+                        limit = i;
+                        result = move_result.hit_solution;
+                    }
                 }
             }
         }
@@ -528,7 +536,7 @@ public class Main : MonoBehaviour
         {
             if (b.stuck && !b.visited)
             {
-                for(int i=1; i<16; ++i)
+                for (int i = 1; i < 16; ++i)
                 {
                     Vec2i np = b.position + direction * i;
                     if (np.x >= 0 && np.y >= 0 && np.x < board_width && np.y < board_height)
@@ -571,14 +579,14 @@ public class Main : MonoBehaviour
 
     //////////////////////////////////////////////////////////////////////
 
-    bool is_solution_complete()
+    bool is_solution_complete(Vec2i offset)
     {
         foreach (Block b in blocks)
         {
             bool found = false;
             foreach (Vec2i v in current_level.win_blocks)
             {
-                if (b.position == v)
+                if (b.position + offset == v)
                 {
                     found = true;
                     break;
@@ -624,7 +632,7 @@ public class Main : MonoBehaviour
     Level load_level(string name)
     {
 #if UNITY_EDITOR
-        return AssetDatabase.LoadAssetAtPath<Level>(name);
+        return AssetDatabase.LoadAssetAtPath<Level>($"Assets/Resources/{name}");
 #else
         return Resources.Load<Level>(name);
 #endif
@@ -648,7 +656,7 @@ public class Main : MonoBehaviour
     public void on_load_level_click()
     {
         string name = level_name_input_field.text;
-        string asset_name = $"Assets/Levels/level_{name}.asset";
+        string asset_name = $"level_{name}.asset";
         Level temp = load_level(asset_name);
         if (temp != null)
         {
@@ -666,12 +674,7 @@ public class Main : MonoBehaviour
     {
 #if UNITY_EDITOR
         string name = level_name_input_field.text;
-        string folder = "Levels";
-        if(!AssetDatabase.IsValidFolder($"Assets/{folder}"))
-        {
-            AssetDatabase.CreateFolder("Assets", folder);
-        }
-        string asset_name = $"Assets/{folder}/level_{name}.asset";
+        string asset_name = $"Assets/Resources/level_{name}.asset";
         AssetDatabase.DeleteAsset(asset_name);
         AssetDatabase.CreateAsset(loaded_level, asset_name);
 #endif
@@ -875,6 +878,7 @@ public class Main : MonoBehaviour
                     // right click moves to next phase (setting moves)
                     if (Input.GetMouseButtonDown(1))
                     {
+                        move_direction = Vec2i.zero;
                         cursor_quad.SetActive(false);
                         foreach (GameObject b in solution_quads)
                         {
@@ -988,32 +992,38 @@ public class Main : MonoBehaviour
                 float time_span = move_end_time - move_start_time;
                 float delta_time = Time.realtimeSinceStartup - move_start_time;
                 float normalized_time = delta_time / time_span; // 0..1
+
+                // arrived at the end of the movement, what happened
                 if (normalized_time >= 0.95f)
                 {
+                    // update the blocks anyway
                     update_block_positions(current_move_vector * move_distance);
                     update_hit_blocks(current_move_vector);
                     Color final_color = stuck_color;
                     current_mode = game_mode.make_move;
-                    if (current_move_result == move_result.hit_side)
+
+                    if (current_move_result == move_result.hit_solution)
+                    {
+                        current_mode = game_mode.winner;
+                        final_color = win_color;
+                    }
+                    else if (current_move_result == move_result.hit_side)
                     {
                         final_color = fail_color;
                         current_mode = game_mode.failed;
                     }
-                    bool all_stuck = true;
-                    foreach (Block b in blocks)
+                    else
                     {
-                        all_stuck &= b.stuck;
-                    }
-                    if (all_stuck)
-                    {
-                        if (is_solution_complete())
+                        // collide and landed on the solution at the same time
+                        bool all_stuck = true;
+                        foreach (Block b in blocks)
+                        {
+                            all_stuck &= b.stuck;
+                        }
+                        if (all_stuck && is_solution_complete(Vec2i.zero))
                         {
                             current_mode = game_mode.winner;
-                        }
-                        else
-                        {
-                            final_color = fail_color;
-                            current_mode = game_mode.failed;
+                            final_color = win_color;
                         }
                     }
                     foreach (Block b in blocks)
