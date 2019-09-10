@@ -163,7 +163,6 @@ public class Main : MonoBehaviour
     StringBuilder debug_text_builder = new StringBuilder();
 
     float banner_text_move_start_time;
-    float banner_text_move_end_time;
 
     //////////////////////////////////////////////////////////////////////
     // KEYBOARD / MOVEMENT
@@ -266,7 +265,6 @@ public class Main : MonoBehaviour
     void set_banner_text(string text)
     {
         banner_text_move_start_time = Time.realtimeSinceStartup;
-        banner_text_move_end_time = banner_text_move_start_time + 1.0f;
         banner_text.GetComponent<Text>().text = text;
         banner_text.SetActive(false);
     }
