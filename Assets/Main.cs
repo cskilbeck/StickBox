@@ -73,6 +73,8 @@ public class Main : MonoBehaviour
         maybe,              // playing, moving blocks after key press
         winner,             // playing, level is done
         failed,             // playing, failed (hit edge or something)
+
+        prepare_to_show_solution,
         show_solution,      // just show me the solution
         make_help_move,     // making a move during show_solution
 
@@ -122,12 +124,23 @@ public class Main : MonoBehaviour
 
     game_mode _current_mode;
 
+    float mode_timer;
+
+    float mode_time_elapsed
+    {
+        get
+        {
+            return Time.realtimeSinceStartup - mode_timer;
+        }
+    }
+
     game_mode current_mode
     {
         get => _current_mode;
         set
         {
             _current_mode = value;
+            mode_timer = Time.realtimeSinceStartup;
             string s;
             if (mode_banners.TryGetValue(_current_mode, out s))
             {
@@ -143,7 +156,8 @@ public class Main : MonoBehaviour
         { game_mode.edit_solution, "Edit the level" },
         { game_mode.create_solution, "Place your blocks" },
         { game_mode.winner, "Winner!" },
-        { game_mode.set_grid_size, "Set the size" }
+        { game_mode.set_grid_size, "Set the size" },
+        { game_mode.prepare_to_show_solution, "Solution!" }
     };
 
     StringBuilder debug_text_builder = new StringBuilder();
@@ -656,7 +670,7 @@ public class Main : MonoBehaviour
     {
         reset_level(loaded_level);
         start_level(loaded_level);
-        current_mode = game_mode.show_solution;
+        current_mode = game_mode.prepare_to_show_solution;
         move_enumerator = loaded_level.solution.GetEnumerator();
     }
 
@@ -1052,9 +1066,16 @@ public class Main : MonoBehaviour
                 current_mode = game_mode.make_move;
                 break;
 
+            case game_mode.prepare_to_show_solution:
+                if(mode_time_elapsed > 0.5f)
+                {
+                    current_mode = game_mode.show_solution;
+                }
+                break;
+
             case game_mode.show_solution:
-                current_move_vector = move_enumerator.Current;
                 move_enumerator.MoveNext();
+                current_move_vector = move_enumerator.Current * -1;
                 current_move_result = get_move_result(current_move_vector, out move_distance);
                 move_start_time = Time.realtimeSinceStartup;
                 move_end_time = move_start_time + (move_distance * 0.02f);
@@ -1062,7 +1083,10 @@ public class Main : MonoBehaviour
                 break;
 
             case game_mode.make_help_move:
-                do_game_move(game_mode.show_solution);
+                if(mode_time_elapsed > 0.25f)
+                {
+                    do_game_move(game_mode.show_solution);
+                }
                 break;
 
             case game_mode.make_move:
