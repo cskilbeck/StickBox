@@ -118,7 +118,7 @@ public class Main : MonoBehaviour
     move_result current_move_result;    // did it stick to a block or the side
     int move_distance;                  // how far it can move before hitting a block or the side
 
-    LinkedList<Vec2i>.Enumerator move_enumerator;   // for showing solution
+    int move_enumerator;   // for showing solution
 
     Block hover_block;
 
@@ -175,6 +175,14 @@ public class Main : MonoBehaviour
         {  KeyCode.RightArrow, Vec2i.right },
         {  KeyCode.UpArrow, Vec2i.up },
         {  KeyCode.DownArrow, Vec2i.down },
+    };
+
+    readonly Vec2i[] compass_directions = new Vec2i[4]
+    {
+        Vec2i.up,
+        Vec2i.right,
+        Vec2i.down,
+        Vec2i.left
     };
 
     Vec2i get_movement_from_keycode(KeyCode key)
@@ -547,8 +555,11 @@ public class Main : MonoBehaviour
     //////////////////////////////////////////////////////////////////////
     // mark all stuck blocks which hit free blocks as stuck 
 
+    // flood fill from all freshly hit blocks
+
     public void update_hit_blocks(Vec2i direction)
     {
+        Block seed_block = null;
         foreach (Block b in blocks)
         {
             b.visited = false;
@@ -565,8 +576,13 @@ public class Main : MonoBehaviour
                         Block c = board[np.x, np.y];
                         if (c != null && !c.visited && !c.stuck)
                         {
+                            if(seed_block == null)
+                            {
+                                seed_block = c;
+                            }
                             c.stuck = true;
                             c.visited = true;
+                            break;
                         }
                         else
                         {
@@ -577,6 +593,29 @@ public class Main : MonoBehaviour
                     {
                         break;
                     }
+                }
+            }
+        }
+        // now flood fill from all stuck, visited blocks to all touching non-stuck, non-visited blocks
+        if(seed_block != null)
+        {
+            flood_fill(seed_block);
+        }
+    }
+
+    void flood_fill(Block b)
+    {
+        foreach(Vec2i dir in compass_directions)
+        {
+            Vec2i pos = b.position + dir;
+            if(pos.x >= 0 && pos.y >= 0 && pos.x < board_width && pos.y < board_height)
+            {
+                Block c = board[pos.x, pos.y];
+                if(c != null && !c.visited && !c.stuck)
+                {
+                    c.stuck = true;
+                    c.visited = true;
+                    flood_fill(c);
                 }
             }
         }
@@ -668,10 +707,17 @@ public class Main : MonoBehaviour
 
     public void on_help_click()
     {
-        reset_level(loaded_level);
-        start_level(loaded_level);
-        current_mode = game_mode.prepare_to_show_solution;
-        move_enumerator = loaded_level.solution.GetEnumerator();
+        if(loaded_level.solution == null)
+        {
+            set_banner_text("Nope!");
+        }
+        else
+        {
+            reset_level(loaded_level);
+            start_level(loaded_level);
+            current_mode = game_mode.prepare_to_show_solution;
+            move_enumerator = loaded_level.solution.Count - 1;
+        }
     }
 
     public void on_reset_level_click()
@@ -1030,7 +1076,7 @@ public class Main : MonoBehaviour
                     if (move_direction == Vec2i.zero)
                     {
                         move_direction = start_movement;
-                        loaded_level.solution.AddFirst(move_direction);
+                        loaded_level.solution.Add(move_direction);
                     }
                     if (move_direction == start_movement)
                     {
@@ -1074,12 +1120,19 @@ public class Main : MonoBehaviour
                 break;
 
             case game_mode.show_solution:
-                move_enumerator.MoveNext();
-                current_move_vector = move_enumerator.Current * -1;
-                current_move_result = get_move_result(current_move_vector, out move_distance);
-                move_start_time = Time.realtimeSinceStartup;
-                move_end_time = move_start_time + (move_distance * 0.02f);
-                current_mode = game_mode.make_help_move;
+                if(move_enumerator < 0)
+                {
+                    current_mode = game_mode.prepare_to_play;
+                }
+                else
+                {
+                    current_move_vector = loaded_level.solution[move_enumerator] * -1;
+                    move_enumerator -= 1;
+                    current_move_result = get_move_result(current_move_vector, out move_distance);
+                    move_start_time = Time.realtimeSinceStartup;
+                    move_end_time = move_start_time + (move_distance * 0.05f);
+                    current_mode = game_mode.make_help_move;
+                }
                 break;
 
             case game_mode.make_help_move:
