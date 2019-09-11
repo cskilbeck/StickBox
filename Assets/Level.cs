@@ -81,10 +81,10 @@ public class Level : ScriptableObject
         win_blocks = new List<Vec2i>();
         start_block = new Vec2i(2, 2);
         solution = new List<Vec2i>();
-        init_board();
+        reset_board();
     }
 
-    public void init_board()
+    public void reset_board()
     {
         board = new Block[width, height];
         blocks = new List<Block>();
@@ -119,6 +119,10 @@ public class Level : ScriptableObject
 
     public void destroy_blocks()
     {
+        if (blocks == null)
+        {
+            Debug.Break();
+        }
         foreach (Block b in blocks)
         {
             Destroy(b.game_object);
@@ -408,5 +412,3 @@ public class Level : ScriptableObject
         return new Vector3(x + x_org, y + y_org, z);
     }
 }
-
-

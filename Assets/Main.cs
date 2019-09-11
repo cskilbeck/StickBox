@@ -1,7 +1,4 @@
 ﻿//////////////////////////////////////////////////////////////////////
-// 4 test moves
-// 5 save/load
-// help/playback
 
 // TODO (chs): fast-forward check solution in the background to determine if a board is valid
 // TODO (chs): undo when building level (just save a copy of the whole damn thing)
@@ -370,6 +367,7 @@ public class Main : MonoBehaviour
 
     void create_solution_quads()
     {
+        destroy_solution();
         foreach (Vec2i s in current_level.win_blocks)
         {
             GameObject block = create_block_object(solution_color);
@@ -390,7 +388,6 @@ public class Main : MonoBehaviour
 
     void create_level_quads()
     {
-        current_level.clear_the_board();
         foreach (Block b in current_level.blocks)
         {
             Destroy(b.game_object);
@@ -445,7 +442,14 @@ public class Main : MonoBehaviour
 
     public void reset_level(Level level)
     {
-        current_level.destroy_blocks();
+        if (current_level != null)
+        {
+            current_level.destroy_blocks();
+        }
+        if (loaded_level != null)
+        {
+            loaded_level.destroy_blocks();
+        }
 
         level.main = this;
         level.destroy_blocks();
@@ -454,7 +458,7 @@ public class Main : MonoBehaviour
 
         current_level = Instantiate(level);
         current_level.main = this;
-        current_level.init_board();
+        current_level.reset_board();
 
         angle = new Vector3(0, 0, 0);
         angle_velocity = new Vector3(0, 0, 0);
@@ -467,7 +471,7 @@ public class Main : MonoBehaviour
 
         current_level = Instantiate(loaded_level);
         current_level.main = this;
-        current_level.init_board();
+        current_level.reset_board();
 
         create_level_quads();
         create_grid(current_level.width, current_level.height, square_size, grid_color, grid_line_width);
@@ -479,7 +483,7 @@ public class Main : MonoBehaviour
     {
 #if UNITY_EDITOR
         Level loaded = AssetDatabase.LoadAssetAtPath<Level>($"Assets/Resources/{name}");
-        loaded.init_board();
+        loaded.reset_board();
         return loaded;
 #else
         return Resources.Load<Level>(name);
@@ -739,6 +743,7 @@ public class Main : MonoBehaviour
                             solution_quads.Remove(cb.game_object);
                             Destroy(cb.game_object);
                             current_level.set_block_at(cp, null);
+                            current_level.win_blocks.Remove(cb.position);
                         }
                         // otherwise click adds one (TODO (chs): check it's a valid place to put a block
                         else
@@ -749,6 +754,7 @@ public class Main : MonoBehaviour
                             b.game_object.transform.position = current_level.board_coordinate(cp, solution_depth);
                             current_level.set_block_at(cp, b);
                             solution_quads.Add(b.game_object);
+                            current_level.win_blocks.Add(cp);
                         }
                     }
                     set_color(cursor_quad, cursor_color);
@@ -806,25 +812,28 @@ public class Main : MonoBehaviour
                 if (current_level.count_stuck_blocks() == 1 && Input.GetKeyDown(KeyCode.P))
                 {
                     set_banner_text("Play!");
-                    // create loaded_level from current_level
-                    loaded_level.width = current_level.height;
-                    loaded_level.height = current_level.height;
-                    loaded_level.start_blocks.Clear();
+
                     foreach (Block b in current_level.blocks)
                     {
-                        loaded_level.start_blocks.Add(b.position);
                         if (b.stuck)
                         {
-                            loaded_level.start_block = b.position;
+                            current_level.start_block = b.position;
                         }
+                        current_level.start_blocks.Add(b.position);
                     }
+
+                    // create loaded_level from current_level
+                    loaded_level = Instantiate(current_level);
+                    loaded_level.reset_board();
+
                     cursor_quad.SetActive(false);
 
                     // ping pong back into current_level
-                    loaded_level.destroy_blocks();
+                    current_level.destroy_blocks();
                     current_level = Instantiate(loaded_level);
                     current_level.main = this;
-                    current_level.destroy_blocks();
+                    current_level.reset_board();
+
                     create_level_quads();
                     create_grid(current_level.width, current_level.height, square_size, grid_color, grid_line_width);
                     create_solution_quads();
