@@ -1,0 +1,78 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 400e0d0a81ea6e4448ae238996d50fb2, type: 3}
+  m_Name: level_16
+  m_EditorClassIdentifier: 
+  width: 12
+  height: 13
+  start_blocks:
+  - {x: 3, y: 3}
+  - {x: 5, y: 1}
+  - {x: 7, y: 1}
+  - {x: 8, y: 1}
+  - {x: 10, y: 1}
+  - {x: 5, y: 4}
+  - {x: 3, y: 5}
+  - {x: 4, y: 5}
+  - {x: 9, y: 5}
+  - {x: 3, y: 9}
+  - {x: 8, y: 9}
+  - {x: 9, y: 6}
+  - {x: 6, y: 7}
+  - {x: 10, y: 7}
+  - {x: 10, y: 11}
+  win_blocks:
+  - {x: 10, y: 11}
+  - {x: 9, y: 10}
+  - {x: 10, y: 10}
+  - {x: 10, y: 9}
+  - {x: 9, y: 9}
+  - {x: 8, y: 9}
+  - {x: 7, y: 8}
+  - {x: 8, y: 8}
+  - {x: 9, y: 8}
+  - {x: 10, y: 8}
+  - {x: 6, y: 7}
+  - {x: 7, y: 7}
+  - {x: 8, y: 7}
+  - {x: 9, y: 7}
+  - {x: 10, y: 7}
+  - {x: 6, y: 7}
+  - {x: 7, y: 7}
+  - {x: 8, y: 7}
+  - {x: 9, y: 7}
+  - {x: 10, y: 7}
+  - {x: 7, y: 8}
+  - {x: 8, y: 8}
+  - {x: 9, y: 8}
+  - {x: 10, y: 8}
+  - {x: 8, y: 9}
+  - {x: 9, y: 9}
+  - {x: 10, y: 9}
+  - {x: 9, y: 10}
+  - {x: 10, y: 10}
+  - {x: 10, y: 11}
+  start_block: {x: 8, y: 9}
+  solution:
+  - {x: 0, y: -1}
+  - {x: 0, y: 1}
+  - {x: 0, y: -1}
+  - {x: -1, y: 0}
+  - {x: 0, y: -1}
+  - {x: 1, y: 0}
+  - {x: 0, y: -1}
+  - {x: 1, y: 0}
+  - {x: 0, y: 1}
+  - {x: -1, y: 0}
+  - {x: 0, y: 1}
+  - {x: 1, y: 0}
+  main: {fileID: 0}
