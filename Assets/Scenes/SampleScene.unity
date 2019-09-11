@@ -1113,7 +1113,7 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
-  square_size: 58
+  square_size: 56
 --- !u!4 &591572703
 Transform:
   m_ObjectHideFlags: 0

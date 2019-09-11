@@ -18,7 +18,7 @@ public class Block
         flag_all = 0xffffffff
     };
 
-    public GameObject quad;
+    public GameObject game_object;
     public Vector2Int position;
     public Flags flags = Flags.flag_none;
 
