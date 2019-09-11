@@ -3,9 +3,6 @@
 // TODO (chs): fast-forward check solution in the background to determine if a board is valid
 // TODO (chs): undo when building level (just save a copy of the whole damn thing)
 
-// DONE (chs): don't allow last stuck block to be selected
-
-using System;
 using System.Collections.Generic;
 using System.Text;
 using UnityEngine;
@@ -38,9 +35,6 @@ public class Main : MonoBehaviour
 
     public Shader color_shader;
 
-    public Button save_button;
-    public Button new_level_button;
-
     public InputField level_name_input_field;
 
     public float grid_line_width = 2;
@@ -59,19 +53,19 @@ public class Main : MonoBehaviour
 
     enum game_mode
     {
-        make_move,          // playing, waiting for a direction
-        maybe,              // playing, moving blocks after key press
-        winner,             // playing, level is done
-        failed,             // playing, failed (hit edge or something)
+        make_move,                  // playing, waiting for a direction
+        maybe,                      // playing, moving blocks after key press
+        winner,                     // playing, level is done
+        failed,                     // playing, failed (hit edge or something)
 
-        prepare_to_show_solution,
-        show_solution,      // just show me the solution
-        make_help_move,     // making a move during show_solution
+        prepare_to_show_solution,   // banner for show solution
+        show_solution,              // just show me the solution
+        make_help_move,             // making a move during show_solution
 
-        prepare_to_play,
-        set_grid_size,      // editing, selecting grid size
-        create_solution,    // editing, adding solution blocks
-        edit_solution       // editing, setting level blocks/moves
+        prepare_to_play,            // banner for play
+        set_grid_size,              // editing, selecting grid size
+        create_solution,            // editing, adding solution blocks
+        edit_solution               // editing, setting level blocks/moves
     }
 
     Level loaded_level;
@@ -388,12 +382,7 @@ public class Main : MonoBehaviour
 
     void create_level_quads()
     {
-        foreach (Block b in current_level.blocks)
-        {
-            Destroy(b.game_object);
-            b.game_object = null;
-        }
-        current_level.blocks.Clear();
+        current_level.destroy_blocks();
         current_level.clear_the_board();
 
         foreach (Vec2i p in current_level.start_blocks)
@@ -412,6 +401,7 @@ public class Main : MonoBehaviour
             block.stuck = stuck;
             block.position = p; // don't null a random board cell in set_block_position
             current_level.set_block_position(block, p);
+            current_level.update_block_graphics();
         }
     }
 
@@ -424,6 +414,35 @@ public class Main : MonoBehaviour
             Destroy(o);
         }
         grid_objects.Clear();
+    }
+
+    //////////////////////////////////////////////////////////////////////
+
+    bool fast_forward(Level level)
+    {
+        Level l = Instantiate(level);
+        l.reset_board();
+        l.copy_blocks_from(level);
+
+        int move = l.solution.Count - 1;
+        while (move >= 0)
+        {
+            Vec2i v = l.solution[move] * -1;
+            move -= 1;
+            int distance;
+            Level.move_result r = l.get_move_result(v, out distance);
+            if(r == Level.move_result.hit_side)
+            {
+                return false;
+            }
+            if(r == Level.move_result.hit_solution)
+            {
+                return true;
+            }
+            l.update_block_positions(v * distance);
+            l.update_hit_blocks(v);
+        }
+        return l.is_solution_complete(Vec2i.zero);
     }
 
     //////////////////////////////////////////////////////////////////////
@@ -495,6 +514,15 @@ public class Main : MonoBehaviour
         Debug.LogError("Resources:");
         UnityEngine.Object[] o = Resources.FindObjectsOfTypeAll(typeof(UnityEngine.Object));
         Debug.LogError(o);
+    }
+
+    public void on_undo_click()
+    {
+        // each time they select a valid direction, save the blocks
+        // to undo:
+        //      pop the most recent blocks off the stack
+        //      copy in blocks
+        //      remove the most recent direction from the solution
     }
 
     public void on_help_click()
@@ -640,6 +668,7 @@ public class Main : MonoBehaviour
         {
             // update the blocks anyway
             current_level.update_block_positions(current_move_vector * move_distance);
+            current_level.update_block_graphics();
             current_level.update_hit_blocks(current_move_vector);
             Color final_color = stuck_color;
             current_mode = next_mode;
@@ -684,7 +713,7 @@ public class Main : MonoBehaviour
                     float d = move_distance * t * square_size;
                     Vector3 movement = new Vector3(current_move_vector.x * d, current_move_vector.y * d, block_depth);
                     Vector3 new_pos = org + movement;
-                    b.game_object.transform.position = new_pos;
+                    b.game_object.transform.position = new Vector3(new_pos.x, new_pos.y, block_depth);
                 }
             }
         }
@@ -803,10 +832,20 @@ public class Main : MonoBehaviour
                     {
                         move_direction = start_movement;
                         current_level.solution.Add(move_direction);
+                        // CHECK IT!
+                        // call fast_forward
+                        // if that's ok, then that's ok
+                        // else ignore the move (pop it from the solution)
                     }
                     if (move_direction == start_movement)
                     {
                         current_level.move_all_stuck_blocks(start_movement);
+                    }
+                    if (!fast_forward(current_level))
+                    {
+                        current_level.move_all_stuck_blocks(start_movement * -1);
+                        current_level.solution.RemoveAt(current_level.solution.Count - 1);
+                        move_direction = Vec2i.zero;
                     }
                 }
                 if (current_level.count_stuck_blocks() == 1 && Input.GetKeyDown(KeyCode.P))
@@ -882,7 +921,7 @@ public class Main : MonoBehaviour
                 {
                     current_move_result = current_level.get_move_result(current_move_vector, out move_distance);
                     move_start_time = Time.realtimeSinceStartup;
-                    move_end_time = move_start_time + (move_distance * 0.02f);
+                    move_end_time = move_start_time + (move_distance * 0.05f);
                     current_mode = game_mode.maybe;
                 }
                 break;

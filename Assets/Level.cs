@@ -117,6 +117,20 @@ public class Level : ScriptableObject
 
     //////////////////////////////////////////////////////////////////////
 
+    public void copy_blocks_from(Level other)
+    {
+        foreach(Block b in other.blocks)
+        {
+            Block n = new Block();
+            n.flags = b.flags;
+            n.position = b.position;
+            blocks.Add(n);
+        }
+        update_block_positions(Vec2i.zero);
+    }
+        
+    //////////////////////////////////////////////////////////////////////
+
     public void destroy_blocks()
     {
         if (blocks == null)
@@ -210,6 +224,16 @@ public class Level : ScriptableObject
         }
         distance = limit;
         return result;
+    }
+
+    //////////////////////////////////////////////////////////////////////
+
+    public void update_block_graphics()
+    {
+        foreach (Block b in blocks)
+        {
+            update_block_graphics_position(b);
+        }
     }
 
     //////////////////////////////////////////////////////////////////////
@@ -387,6 +411,7 @@ public class Level : ScriptableObject
             if (b.stuck)
             {
                 set_block_position(b, b.position + direction);
+                update_block_graphics_position(b);
             }
         }
     }
@@ -397,6 +422,12 @@ public class Level : ScriptableObject
     {
         b.position = p;
         board[b.position.x, b.position.y] = b;
+    }
+
+    //////////////////////////////////////////////////////////////////////
+
+    public void update_block_graphics_position(Block b)
+    {
         b.game_object.transform.position = board_coordinate(b.position, Main.block_depth);
     }
 
