@@ -431,11 +431,11 @@ public class Main : MonoBehaviour
             move -= 1;
             int distance;
             Level.move_result r = l.get_move_result(v, out distance);
-            if(r == Level.move_result.hit_side)
+            if (r == Level.move_result.hit_side)
             {
                 return false;
             }
-            if(r == Level.move_result.hit_solution)
+            if (r == Level.move_result.hit_solution)
             {
                 return true;
             }
@@ -486,9 +486,9 @@ public class Main : MonoBehaviour
 
     void start_level(Level level)
     {
-        loaded_level.destroy_blocks();
+        level.destroy_blocks();
 
-        current_level = Instantiate(loaded_level);
+        current_level = Instantiate(level);
         current_level.main = this;
         current_level.reset_board();
 
