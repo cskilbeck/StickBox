@@ -298,19 +298,6 @@ public class Main : MonoBehaviour
 
     //////////////////////////////////////////////////////////////////////
 
-    void create_solution_quads()
-    {
-        destroy_solution();
-        foreach (Vec2i s in current_level.win_blocks)
-        {
-            GameObject block = create_block_object(solution_color);
-            block.transform.position = current_level.board_coordinate(s, solution_depth);
-            solution_quads.Add(block);
-        }
-    }
-
-    //////////////////////////////////////////////////////////////////////
-
     Block create_block(Block o)
     {
         Color c = o.stuck ? stuck_color : moving_color;
@@ -412,9 +399,18 @@ public class Main : MonoBehaviour
         level.destroy_blocks();
         create_level_quads();
         create_grid(current_level.width, current_level.height, square_size, grid_color, grid_line_width);
-        create_solution_quads();
+        destroy_solution();
+        foreach (Vec2i s in current_level.win_blocks)
+        {
+            GameObject block = create_block_object(solution_color);
+            block.transform.position = current_level.board_coordinate(s, solution_depth);
+            solution_quads.Add(block);
+        }
         current_mode = Game.Mode.prepare_to_play;
     }
+
+    //////////////////////////////////////////////////////////////////////
+    // CLICK HANDLERS
 
     public void on_export_click()
     {
@@ -425,11 +421,6 @@ public class Main : MonoBehaviour
 
     public void on_undo_click()
     {
-        // each time they select a valid direction, save the blocks
-        // to undo:
-        //      pop the most recent blocks off the stack
-        //      copy in blocks
-        //      remove the most recent direction from the solution
     }
 
     public void on_help_click()
@@ -468,6 +459,7 @@ public class Main : MonoBehaviour
         Level temp = File.load_level(asset_name);
         if (temp != null)
         {
+            reset_level(current_level);
             current_level = temp;
             start_level(current_level);
         }
@@ -493,14 +485,10 @@ public class Main : MonoBehaviour
     void Start()
     {
         PlayfieldLayerNumber = LayerMask.NameToLayer("Playfield");
-
         grid_objects = new List<GameObject>();
         solution_quads = new List<GameObject>();
-
         cursor_quad = create_block_object(Color.magenta, square_size * 0.3f);
-
         current_level = ScriptableObject.CreateInstance<Level>();
-
         current_mode = Game.Mode.set_grid_size;
     }
 

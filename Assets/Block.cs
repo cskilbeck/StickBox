@@ -5,6 +5,7 @@ using UnityEngine;
 
 //////////////////////////////////////////////////////////////////////
 
+[Serializable]
 public class Block
 {
     [Flags]
@@ -18,9 +19,11 @@ public class Block
         flag_all = 0xffffffff
     };
 
-    public GameObject game_object;
     public Vector2Int position;
     public Flags flags = Flags.flag_none;
+
+    [NonSerialized]
+    public GameObject game_object;
 
     public bool stuck
     {
