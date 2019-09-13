@@ -51,7 +51,6 @@ public class Main : MonoBehaviour
     public static readonly float grid_depth = 4.0f;
     public static readonly float solution_depth = 5.0f;
 
-    Level loaded_level;
     Level current_level;
 
     List<GameObject> grid_objects;
@@ -312,11 +311,14 @@ public class Main : MonoBehaviour
 
     //////////////////////////////////////////////////////////////////////
 
-    Block create_block(Color c)
+    Block create_block(Block o)
     {
+        Color c = o.stuck ? stuck_color : moving_color;
         GameObject quad = create_block_object(c);
         Block b = new Block();
+        b.position = o.position;
         b.game_object = quad;
+        b.flags = o.flags;
         return b;
     }
 
@@ -325,22 +327,14 @@ public class Main : MonoBehaviour
         current_level.destroy_blocks();
         current_level.clear_the_board();
 
-        foreach (Vec2i p in current_level.start_blocks)
+        foreach (Block p in current_level.start_blocks)
         {
-            bool stuck = false;
-            Color block_color = moving_color;
-            if (p == current_level.start_block)
-            {
-                stuck = true;
-                block_color = stuck_color;
-            }
-            Block block = create_block(block_color);
+            Color block_color = p.stuck ? stuck_color : moving_color;
+            Block block = create_block(p);
             set_color(block.game_object, block_color);
             current_level.blocks.Add(block);
-            current_level.set_block_at(p, block);
-            block.stuck = stuck;
-            block.position = p; // don't null a random board cell in set_block_position
-            current_level.set_block_position(block, p);
+            current_level.set_block_at(p.position, block);
+            current_level.set_block_position(block, p.position);
             current_level.update_block_graphics();
         }
     }
@@ -354,6 +348,17 @@ public class Main : MonoBehaviour
             Destroy(o);
         }
         grid_objects.Clear();
+    }
+
+    //////////////////////////////////////////////////////////////////////
+
+    void destroy_solution()
+    {
+        foreach (GameObject o in solution_quads)
+        {
+            Destroy(o);
+        }
+        solution_quads.Clear();
     }
 
     //////////////////////////////////////////////////////////////////////
@@ -386,38 +391,14 @@ public class Main : MonoBehaviour
     }
 
     //////////////////////////////////////////////////////////////////////
-
-    void destroy_solution()
-    {
-        foreach (GameObject o in solution_quads)
-        {
-            Destroy(o);
-        }
-        solution_quads.Clear();
-    }
-
-    //////////////////////////////////////////////////////////////////////
     // PLAY LEVEL
 
     public void reset_level(Level level)
     {
-        if (current_level != null)
-        {
-            current_level.destroy_blocks();
-        }
-        if (loaded_level != null)
-        {
-            loaded_level.destroy_blocks();
-        }
-
-        level.main = this;
         level.destroy_blocks();
+        level.reset(square_size, block_depth);
         destroy_grid();
         destroy_solution();
-
-        current_level = Instantiate(level);
-        current_level.main = this;
-        current_level.reset_board();
 
         angle = new Vector3(0, 0, 0);
         angle_velocity = new Vector3(0, 0, 0);
@@ -426,27 +407,13 @@ public class Main : MonoBehaviour
 
     void start_level(Level level)
     {
+        destroy_grid();
+        reset_level(current_level);
         level.destroy_blocks();
-
-        current_level = Instantiate(level);
-        current_level.main = this;
-        current_level.reset_board();
-
         create_level_quads();
         create_grid(current_level.width, current_level.height, square_size, grid_color, grid_line_width);
         create_solution_quads();
         current_mode = Game.Mode.prepare_to_play;
-    }
-
-    Level load_level(string name)
-    {
-#if UNITY_EDITOR
-        Level loaded = AssetDatabase.LoadAssetAtPath<Level>($"Assets/Resources/{name}");
-        loaded.reset_board();
-        return loaded;
-#else
-        return Resources.Load<Level>(name);
-#endif
     }
 
     public void on_export_click()
@@ -467,24 +434,21 @@ public class Main : MonoBehaviour
 
     public void on_help_click()
     {
-        if (loaded_level.solution == null)
+        if (current_level.solution == null)
         {
             set_banner_text("Nope!");
         }
         else
         {
-            current_level.destroy_blocks();
-            reset_level(loaded_level);
-            start_level(loaded_level);
+            start_level(current_level);
             current_mode = Game.Mode.prepare_to_show_solution;
-            move_enumerator = loaded_level.solution.Count - 1;
+            move_enumerator = current_level.solution.Count - 1;
         }
     }
 
     public void on_reset_level_click()
     {
-        reset_level(loaded_level);
-        start_level(loaded_level);
+        start_level(current_level);
         current_mode = Game.Mode.make_move;
     }
 
@@ -492,7 +456,7 @@ public class Main : MonoBehaviour
     {
         reset_level(current_level);
         current_level = ScriptableObject.CreateInstance<Level>();
-        current_level.main = this;
+        current_level.reset(square_size, block_depth);
         current_level.create_board(16, 16);
         current_mode = Game.Mode.set_grid_size;
     }
@@ -501,12 +465,11 @@ public class Main : MonoBehaviour
     {
         string name = level_name_input_field.text;
         string asset_name = $"level_{name}.asset";
-        Level temp = load_level(asset_name);
+        Level temp = File.load_level(asset_name);
         if (temp != null)
         {
-            loaded_level = temp;
-            reset_level(loaded_level);
-            start_level(loaded_level);
+            current_level = temp;
+            start_level(current_level);
         }
         else
         {
@@ -520,7 +483,7 @@ public class Main : MonoBehaviour
         string name = level_name_input_field.text;
         string asset_name = $"Assets/Resources/level_{name}.asset";
         AssetDatabase.DeleteAsset(asset_name);
-        AssetDatabase.CreateAsset(loaded_level, asset_name);
+        AssetDatabase.CreateAsset(current_level, asset_name);
 #endif
     }
 
@@ -536,26 +499,9 @@ public class Main : MonoBehaviour
 
         cursor_quad = create_block_object(Color.magenta, square_size * 0.3f);
 
-        loaded_level = ScriptableObject.CreateInstance<Level>();
-        loaded_level.create_board(13, 13);
+        current_level = ScriptableObject.CreateInstance<Level>();
 
-        loaded_level.start_blocks.Add(new Vec2i(2, 2));
-        loaded_level.start_blocks.Add(new Vec2i(12, 2));
-        loaded_level.start_blocks.Add(new Vec2i(12, 3));
-        loaded_level.start_blocks.Add(new Vec2i(2, 3));
-        loaded_level.start_blocks.Add(new Vec2i(2, 12));
-        loaded_level.start_blocks.Add(new Vec2i(12, 12));
-
-        loaded_level.win_blocks.Add(new Vec2i(11, 10));
-        loaded_level.win_blocks.Add(new Vec2i(11, 11));
-        loaded_level.win_blocks.Add(new Vec2i(11, 12));
-        loaded_level.win_blocks.Add(new Vec2i(12, 10));
-        loaded_level.win_blocks.Add(new Vec2i(12, 11));
-        loaded_level.win_blocks.Add(new Vec2i(12, 12));
-
-        reset_level(loaded_level);
         current_mode = Game.Mode.set_grid_size;
-        //start_level(loaded_level);
     }
 
     //////////////////////////////////////////////////////////////////////
@@ -676,9 +622,9 @@ public class Main : MonoBehaviour
                 if (Input.GetMouseButtonDown(0))
                 {
                     current_level = ScriptableObject.CreateInstance<Level>();
-                    current_level.main = this;
-                    current_level.create_board(bw, bh);
+                    current_level.reset(square_size, block_depth);
                     reset_level(current_level);
+                    current_level.create_board(bw, bh);
                     current_mode = Game.Mode.create_solution;
                     Debug.Log($"Board is {bw}x{bh}");
                 }
@@ -772,10 +718,6 @@ public class Main : MonoBehaviour
                     {
                         move_direction = start_movement;
                         current_level.solution.Add(move_direction);
-                        // CHECK IT!
-                        // call fast_forward
-                        // if that's ok, then that's ok
-                        // else ignore the move (pop it from the solution)
                     }
                     if (move_direction == start_movement)
                     {
@@ -788,34 +730,18 @@ public class Main : MonoBehaviour
                         move_direction = Vec2i.zero;
                     }
                 }
-                if (current_level.count_stuck_blocks() == 1 && Input.GetKeyDown(KeyCode.P))
+                if (Input.GetKeyDown(KeyCode.P))
                 {
                     set_banner_text("Play!");
 
+                    // create loaded_level from current_level
                     foreach (Block b in current_level.blocks)
                     {
-                        if (b.stuck)
-                        {
-                            current_level.start_block = b.position;
-                        }
-                        current_level.start_blocks.Add(b.position);
+                        current_level.start_blocks.Add(create_block(b));
                     }
 
-                    // create loaded_level from current_level
-                    loaded_level = Instantiate(current_level);
-                    loaded_level.reset_board();
-
                     cursor_quad.SetActive(false);
-
-                    // ping pong back into current_level
-                    current_level.destroy_blocks();
-                    current_level = Instantiate(loaded_level);
-                    current_level.main = this;
-                    current_level.reset_board();
-
-                    create_level_quads();
-                    create_grid(current_level.width, current_level.height, square_size, grid_color, grid_line_width);
-                    create_solution_quads();
+                    start_level(current_level);
                     current_mode = Game.Mode.make_move;
                 }
                 break;
@@ -838,7 +764,7 @@ public class Main : MonoBehaviour
                 }
                 else if (mode_time_elapsed > 0.333f)
                 {
-                    current_move_vector = loaded_level.solution[move_enumerator] * -1;
+                    current_move_vector = current_level.solution[move_enumerator] * -1;
                     move_enumerator -= 1;
                     current_move_result = current_level.get_move_result(current_move_vector, out move_distance);
                     move_start_time = Time.realtimeSinceStartup;
@@ -899,8 +825,7 @@ public class Main : MonoBehaviour
         // space to reset level
         if (Input.GetKeyDown(KeyCode.Space))
         {
-            reset_level(loaded_level);
-            start_level(loaded_level);
+            start_level(current_level);
             current_mode = Game.Mode.make_move;
         }
 

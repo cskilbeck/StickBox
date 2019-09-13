@@ -19,12 +19,12 @@ public class Level : ScriptableObject
     public int width;                                                   // board size in grid squares
     public int height;
 
-    public List<Vec2i> start_blocks = new List<Vec2i>();                // where they are at the beginning
+    public List<Block> start_blocks = new List<Block>();                // where they are at the beginning
     public List<Vec2i> win_blocks = new List<Vec2i>();                  // the solution
-    public Vec2i start_block = new Vec2i(2, 2);                         // which block is stuck to start with
     public List<Vec2i> solution = new List<Vec2i>();                    // play these keys to solve it (only from the beginning)
 
-    public Main main;
+    public float square_size;
+    public float block_depth;
 
     //////////////////////////////////////////////////////////////////////
 
@@ -77,9 +77,8 @@ public class Level : ScriptableObject
     {
         width = w;
         height = h;
-        start_blocks = new List<Vec2i>();
+        start_blocks = new List<Block>();
         win_blocks = new List<Vec2i>();
-        start_block = new Vec2i(2, 2);
         solution = new List<Vec2i>();
         reset_board();
     }
@@ -100,8 +99,9 @@ public class Level : ScriptableObject
     {
         name = other.name;
         create_board(other.width, other.height);
-        foreach (Vec2i v in other.start_blocks)
+        foreach (Block v in other.start_blocks)
         {
+            v.game_object = null;
             start_blocks.Add(v);
         }
         foreach (Vec2i v in other.win_blocks)
@@ -112,7 +112,6 @@ public class Level : ScriptableObject
         {
             solution.Add(v);
         }
-        start_block = other.start_block;
     }
 
     //////////////////////////////////////////////////////////////////////
@@ -133,16 +132,15 @@ public class Level : ScriptableObject
 
     public void destroy_blocks()
     {
-        if (blocks == null)
+        if (blocks != null)
         {
-            Debug.Break();
+            foreach (Block b in blocks)
+            {
+                Destroy(b.game_object);
+                b.game_object = null;
+            }
+            blocks.Clear();
         }
-        foreach (Block b in blocks)
-        {
-            Destroy(b.game_object);
-            b.game_object = null;
-        }
-        blocks.Clear();
     }
 
     //////////////////////////////////////////////////////////////////////
@@ -416,6 +414,15 @@ public class Level : ScriptableObject
         }
     }
 
+    public void reset(float square_size_, float block_depth_)
+    {
+        square_size = square_size_;
+        block_depth = block_depth_;
+        reset_board();
+        destroy_blocks();
+
+    }
+
     //////////////////////////////////////////////////////////////////////
 
     public void set_block_position(Block b, Vec2i p)
@@ -428,7 +435,7 @@ public class Level : ScriptableObject
 
     public void update_block_graphics_position(Block b)
     {
-        b.game_object.transform.position = board_coordinate(b.position, Main.block_depth);
+        b.game_object.transform.position = board_coordinate(b.position, block_depth);
     }
 
     //////////////////////////////////////////////////////////////////////
@@ -436,10 +443,10 @@ public class Level : ScriptableObject
 
     public Vector3 board_coordinate(Vec2i p, float z)
     {
-        float x_org = -(width * main.square_size / 2);
-        float y_org = -(height * main.square_size / 2);
-        float x = p.x * main.square_size;
-        float y = p.y * main.square_size;
+        float x_org = -(width * square_size / 2);
+        float y_org = -(height * square_size / 2);
+        float x = p.x * square_size;
+        float y = p.y * square_size;
         return new Vector3(x + x_org, y + y_org, z);
     }
 }
