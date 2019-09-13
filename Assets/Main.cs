@@ -51,23 +51,6 @@ public class Main : MonoBehaviour
     public static readonly float grid_depth = 4.0f;
     public static readonly float solution_depth = 5.0f;
 
-    enum game_mode
-    {
-        make_move,                  // playing, waiting for a direction
-        maybe,                      // playing, moving blocks after key press
-        winner,                     // playing, level is done
-        failed,                     // playing, failed (hit edge or something)
-
-        prepare_to_show_solution,   // banner for show solution
-        show_solution,              // just show me the solution
-        make_help_move,             // making a move during show_solution
-
-        prepare_to_play,            // banner for play
-        set_grid_size,              // editing, selecting grid size
-        create_solution,            // editing, adding solution blocks
-        edit_solution               // editing, setting level blocks/moves
-    }
-
     Level loaded_level;
     Level current_level;
 
@@ -80,8 +63,6 @@ public class Main : MonoBehaviour
 
     float grid_width;
     float grid_height;
-
-    Plane playfield_plane;
 
     Vec2i move_direction;
 
@@ -100,7 +81,7 @@ public class Main : MonoBehaviour
 
     Block hover_block;
 
-    game_mode _current_mode;
+    Game.Mode _current_mode;
 
     float mode_timer;
 
@@ -112,7 +93,7 @@ public class Main : MonoBehaviour
         }
     }
 
-    game_mode current_mode
+    Game.Mode current_mode
     {
         get => _current_mode;
         set
@@ -127,61 +108,20 @@ public class Main : MonoBehaviour
         }
     }
 
-    Dictionary<game_mode, string> mode_banners = new Dictionary<game_mode, string>()
+    Dictionary<Game.Mode, string> mode_banners = new Dictionary<Game.Mode, string>()
     {
-        { game_mode.failed, "Failed!" },
-        { game_mode.prepare_to_play, "Play!" },
-        { game_mode.edit_solution, "Edit the level" },
-        { game_mode.create_solution, "Place your blocks" },
-        { game_mode.winner, "Winner!" },
-        { game_mode.set_grid_size, "Set the size" },
-        { game_mode.prepare_to_show_solution, "Solution!" }
+        { Game.Mode.failed, "Failed!" },
+        { Game.Mode.prepare_to_play, "Play!" },
+        { Game.Mode.edit_solution, "Edit the level" },
+        { Game.Mode.create_solution, "Place your blocks" },
+        { Game.Mode.winner, "Winner!" },
+        { Game.Mode.set_grid_size, "Set the size" },
+        { Game.Mode.prepare_to_show_solution, "Solution!" }
     };
 
     StringBuilder debug_text_builder = new StringBuilder();
 
     float banner_text_move_start_time;
-
-    //////////////////////////////////////////////////////////////////////
-    // KEYBOARD / MOVEMENT
-
-    KeyCode[] movement_keys = new KeyCode[] { KeyCode.LeftArrow, KeyCode.RightArrow, KeyCode.UpArrow, KeyCode.DownArrow };
-
-    Dictionary<KeyCode, Vec2i> moves = new Dictionary<KeyCode, Vec2i> {
-        {  KeyCode.LeftArrow, Vec2i.left },
-        {  KeyCode.RightArrow, Vec2i.right },
-        {  KeyCode.UpArrow, Vec2i.up },
-        {  KeyCode.DownArrow, Vec2i.down },
-    };
-
-    readonly Vec2i[] compass_directions = new Vec2i[4]
-    {
-        Vec2i.up,
-        Vec2i.right,
-        Vec2i.down,
-        Vec2i.left
-    };
-
-    Vec2i get_movement_from_keycode(KeyCode key)
-    {
-        if (moves.TryGetValue(key, out Vec2i dir))
-        {
-            return dir;
-        }
-        return Vec2i.zero;
-    }
-
-    Vec2i get_key_movement()
-    {
-        foreach (KeyCode key in movement_keys)
-        {
-            if (Input.GetKeyDown(key))
-            {
-                return get_movement_from_keycode(key);
-            }
-        }
-        return Vec2i.zero;
-    }
 
     //////////////////////////////////////////////////////////////////////
     // UTILS
@@ -495,7 +435,7 @@ public class Main : MonoBehaviour
         create_level_quads();
         create_grid(current_level.width, current_level.height, square_size, grid_color, grid_line_width);
         create_solution_quads();
-        current_mode = game_mode.prepare_to_play;
+        current_mode = Game.Mode.prepare_to_play;
     }
 
     Level load_level(string name)
@@ -536,7 +476,7 @@ public class Main : MonoBehaviour
             current_level.destroy_blocks();
             reset_level(loaded_level);
             start_level(loaded_level);
-            current_mode = game_mode.prepare_to_show_solution;
+            current_mode = Game.Mode.prepare_to_show_solution;
             move_enumerator = loaded_level.solution.Count - 1;
         }
     }
@@ -545,7 +485,7 @@ public class Main : MonoBehaviour
     {
         reset_level(loaded_level);
         start_level(loaded_level);
-        current_mode = game_mode.make_move;
+        current_mode = Game.Mode.make_move;
     }
 
     public void on_new_level_click()
@@ -554,7 +494,7 @@ public class Main : MonoBehaviour
         current_level = ScriptableObject.CreateInstance<Level>();
         current_level.main = this;
         current_level.create_board(16, 16);
-        current_mode = game_mode.set_grid_size;
+        current_mode = Game.Mode.set_grid_size;
     }
 
     public void on_load_level_click()
@@ -614,7 +554,7 @@ public class Main : MonoBehaviour
         loaded_level.win_blocks.Add(new Vec2i(12, 12));
 
         reset_level(loaded_level);
-        current_mode = game_mode.set_grid_size;
+        current_mode = Game.Mode.set_grid_size;
         //start_level(loaded_level);
     }
 
@@ -657,7 +597,7 @@ public class Main : MonoBehaviour
 
     //////////////////////////////////////////////////////////////////////
 
-    void do_game_move(game_mode next_mode)
+    void do_game_move(Game.Mode next_mode)
     {
         float time_span = move_end_time - move_start_time;
         float delta_time = Time.realtimeSinceStartup - move_start_time;
@@ -675,13 +615,13 @@ public class Main : MonoBehaviour
 
             if (current_move_result == Level.move_result.hit_solution)
             {
-                current_mode = game_mode.winner;
+                current_mode = Game.Mode.winner;
                 final_color = win_color;
             }
             else if (current_move_result == Level.move_result.hit_side)
             {
                 final_color = fail_color;
-                current_mode = game_mode.failed;
+                current_mode = Game.Mode.failed;
             }
             else
             {
@@ -689,7 +629,7 @@ public class Main : MonoBehaviour
                 bool all_stuck = current_level.count_free_blocks() == 0;
                 if (all_stuck && current_level.is_solution_complete(Vec2i.zero))
                 {
-                    current_mode = game_mode.winner;
+                    current_mode = Game.Mode.winner;
                     final_color = win_color;
                 }
             }
@@ -726,7 +666,7 @@ public class Main : MonoBehaviour
         switch (current_mode)
         {
             // drag mouse to set size of grid
-            case game_mode.set_grid_size:
+            case Game.Mode.set_grid_size:
                 Vector2 grid_pos = intersect_front_face_f(16, 16, Input.mousePosition);
                 float w = Mathf.Min(8, Mathf.Max(1.5f, Mathf.Abs(grid_pos.x - 8)));
                 float h = Mathf.Min(8, Mathf.Max(1.5f, Mathf.Abs(grid_pos.y - 8)));
@@ -739,14 +679,14 @@ public class Main : MonoBehaviour
                     current_level.main = this;
                     current_level.create_board(bw, bh);
                     reset_level(current_level);
-                    current_mode = game_mode.create_solution;
+                    current_mode = Game.Mode.create_solution;
                     Debug.Log($"Board is {bw}x{bh}");
                 }
                 create_grid(bw, bh, square_size, grid_color, grid_line_width);
                 break;
 
             // click some squares to create the solution blocks
-            case game_mode.create_solution:
+            case Game.Mode.create_solution:
                 Vec2i cp = intersect_front_face(current_level.width, current_level.height, Input.mousePosition);
                 if (current_level.out_of_bounds(cp))
                 {
@@ -814,17 +754,17 @@ public class Main : MonoBehaviour
                                 }
                             }
                         }
-                        current_mode = game_mode.edit_solution;
+                        current_mode = Game.Mode.edit_solution;
                     }
                 }
                 break;
 
             // create the moves
             // TODO (chs): store solution direction thingy
-            case game_mode.edit_solution:
+            case Game.Mode.edit_solution:
 
                 choose_unstuck_blocks();
-                Vec2i start_movement = get_key_movement();  // check if it's valid to move in this direction
+                Vec2i start_movement = KeyboardInput.get_key_movement();  // check if it's valid to move in this direction
 
                 if (start_movement != Vec2i.zero)
                 {
@@ -876,25 +816,25 @@ public class Main : MonoBehaviour
                     create_level_quads();
                     create_grid(current_level.width, current_level.height, square_size, grid_color, grid_line_width);
                     create_solution_quads();
-                    current_mode = game_mode.make_move;
+                    current_mode = Game.Mode.make_move;
                 }
                 break;
 
-            case game_mode.prepare_to_play:
-                current_mode = game_mode.make_move;
+            case Game.Mode.prepare_to_play:
+                current_mode = Game.Mode.make_move;
                 break;
 
-            case game_mode.prepare_to_show_solution:
+            case Game.Mode.prepare_to_show_solution:
                 if (mode_time_elapsed > 0.5f)
                 {
-                    current_mode = game_mode.show_solution;
+                    current_mode = Game.Mode.show_solution;
                 }
                 break;
 
-            case game_mode.show_solution:
+            case Game.Mode.show_solution:
                 if (move_enumerator < 0)
                 {
-                    current_mode = game_mode.prepare_to_play;
+                    current_mode = Game.Mode.prepare_to_play;
                 }
                 else if (mode_time_elapsed > 0.333f)
                 {
@@ -903,30 +843,30 @@ public class Main : MonoBehaviour
                     current_move_result = current_level.get_move_result(current_move_vector, out move_distance);
                     move_start_time = Time.realtimeSinceStartup;
                     move_end_time = move_start_time + (move_distance * 0.04f);
-                    current_mode = game_mode.make_help_move;
+                    current_mode = Game.Mode.make_help_move;
                 }
                 break;
 
-            case game_mode.make_help_move:
-                do_game_move(game_mode.show_solution);
+            case Game.Mode.make_help_move:
+                do_game_move(Game.Mode.show_solution);
                 break;
 
-            case game_mode.maybe:
-                do_game_move(game_mode.make_move);
+            case Game.Mode.maybe:
+                do_game_move(Game.Mode.make_move);
                 break;
 
-            case game_mode.make_move:
-                current_move_vector = get_key_movement();
+            case Game.Mode.make_move:
+                current_move_vector = KeyboardInput.get_key_movement();
                 if (current_move_vector != Vec2i.zero)
                 {
                     current_move_result = current_level.get_move_result(current_move_vector, out move_distance);
                     move_start_time = Time.realtimeSinceStartup;
                     move_end_time = move_start_time + (move_distance * 0.05f);
-                    current_mode = game_mode.maybe;
+                    current_mode = Game.Mode.maybe;
                 }
                 break;
 
-            case game_mode.failed:
+            case Game.Mode.failed:
                 Color f = solution_color;
                 win_flash_timer = (win_flash_timer + 1) % 10;
                 if (win_flash_timer > 3)
@@ -939,7 +879,7 @@ public class Main : MonoBehaviour
                 }
                 break;
 
-            case game_mode.winner:
+            case Game.Mode.winner:
                 Color c = win_color;
                 win_flash_timer = (win_flash_timer + 1) % 10;
                 if (win_flash_timer > 3)
@@ -961,7 +901,7 @@ public class Main : MonoBehaviour
         {
             reset_level(loaded_level);
             start_level(loaded_level);
-            current_mode = game_mode.make_move;
+            current_mode = Game.Mode.make_move;
         }
 
         // Escape to quit
