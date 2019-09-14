@@ -25,6 +25,8 @@ public class Main : MonoBehaviour
     public GameObject banner_text;
     public Text debug_text;
 
+    public RenderTexture playfield_texture;
+
     public Color grid_color = new Color(0.2f, 0.3f, 0.1f, 1);
     public Color stuck_color = Color.yellow;
     public Color moving_color = Color.blue;
@@ -54,7 +56,7 @@ public class Main : MonoBehaviour
     Level current_level;
 
     List<GameObject> grid_objects;
-    List<GameObject> solution_quads;
+    List<GameObject> solution_objects;
 
     GameObject cursor_quad;
 
@@ -65,8 +67,8 @@ public class Main : MonoBehaviour
 
     Vec2i move_direction;
 
-    Vector3 angle;
-    Vector3 angle_velocity;
+    Vector3 cube_angle;
+    Vector3 cube_angle_velocity;
 
     int win_flash_timer;
 
@@ -279,8 +281,8 @@ public class Main : MonoBehaviour
             Vector3 hit_pos = hit.transform.InverseTransformPoint(hit.point);
             float gw = board_width * square_size;
             float gh = board_height * square_size;
-            float ox = hit_pos.x * 1024 / gw;
-            float oy = hit_pos.y * 1024 / gh;
+            float ox = hit_pos.x * playfield_texture.width / gw;
+            float oy = hit_pos.y * playfield_texture.height / gh;
             float mx = (ox * gw) + gw / 2;
             float my = (oy * gh) + gh / 2;
             return new Vector2(mx / square_size, my / square_size);
@@ -341,11 +343,11 @@ public class Main : MonoBehaviour
 
     void destroy_solution()
     {
-        foreach (GameObject o in solution_quads)
+        foreach (GameObject o in solution_objects)
         {
             Destroy(o);
         }
-        solution_quads.Clear();
+        solution_objects.Clear();
     }
 
     //////////////////////////////////////////////////////////////////////
@@ -387,8 +389,8 @@ public class Main : MonoBehaviour
         destroy_grid();
         destroy_solution();
 
-        angle = new Vector3(0, 0, 0);
-        angle_velocity = new Vector3(0, 0, 0);
+        cube_angle = new Vector3(0, 0, 0);
+        cube_angle_velocity = new Vector3(0, 0, 0);
         win_flash_timer = 0;
     }
 
@@ -404,9 +406,27 @@ public class Main : MonoBehaviour
         {
             GameObject block = create_block_object(solution_color);
             block.transform.position = current_level.board_coordinate(s, solution_depth);
-            solution_quads.Add(block);
+            solution_objects.Add(block);
         }
         current_mode = Game.Mode.prepare_to_play;
+    }
+
+    //////////////////////////////////////////////////////////////////////
+
+    void play_level(string name)
+    {
+        string asset_name = $"level_{name}.asset";
+        Level temp = File.load_level(asset_name);
+        if (temp != null)
+        {
+            reset_level(current_level);
+            current_level = temp;
+            start_level(current_level);
+        }
+        else
+        {
+            set_banner_text($"{name} not found!");
+        }
     }
 
     //////////////////////////////////////////////////////////////////////
@@ -454,19 +474,7 @@ public class Main : MonoBehaviour
 
     public void on_load_level_click()
     {
-        string name = level_name_input_field.text;
-        string asset_name = $"level_{name}.asset";
-        Level temp = File.load_level(asset_name);
-        if (temp != null)
-        {
-            reset_level(current_level);
-            current_level = temp;
-            start_level(current_level);
-        }
-        else
-        {
-            set_banner_text($"{name} not found!");
-        }
+        play_level(level_name_input_field.text);
     }
 
     public void on_save_level_click()
@@ -486,7 +494,7 @@ public class Main : MonoBehaviour
     {
         PlayfieldLayerNumber = LayerMask.NameToLayer("Playfield");
         grid_objects = new List<GameObject>();
-        solution_quads = new List<GameObject>();
+        solution_objects = new List<GameObject>();
         cursor_quad = create_block_object(Color.magenta, square_size * 0.3f);
         current_level = ScriptableObject.CreateInstance<Level>();
         current_mode = Game.Mode.set_grid_size;
@@ -574,7 +582,7 @@ public class Main : MonoBehaviour
                     set_color(b.game_object, final_color);
                 }
             }
-            angle_velocity = new Vector3(current_move_vector.y, -current_move_vector.x, 0) * 2;
+            cube_angle_velocity = new Vector3(current_move_vector.y, -current_move_vector.x, 0) * 2;
         }
         else
         {
@@ -643,7 +651,7 @@ public class Main : MonoBehaviour
                         if (cb != null)
                         {
                             cursor_color = Color.black;
-                            solution_quads.Remove(cb.game_object);
+                            solution_objects.Remove(cb.game_object);
                             Destroy(cb.game_object);
                             current_level.set_block_at(cp, null);
                             current_level.win_blocks.Remove(cb.position);
@@ -656,7 +664,7 @@ public class Main : MonoBehaviour
                             b.game_object = create_block_object(solution_color);
                             b.game_object.transform.position = current_level.board_coordinate(cp, solution_depth);
                             current_level.set_block_at(cp, b);
-                            solution_quads.Add(b.game_object);
+                            solution_objects.Add(b.game_object);
                             current_level.win_blocks.Add(cp);
                         }
                     }
@@ -668,7 +676,7 @@ public class Main : MonoBehaviour
                         current_level.solution.Clear();
                         move_direction = Vec2i.zero;
                         cursor_quad.SetActive(false);
-                        foreach (GameObject b in solution_quads)
+                        foreach (GameObject b in solution_objects)
                         {
                             b.transform.position = new Vector3(b.transform.position.x, b.transform.position.y, solution_depth);
                         }
@@ -787,7 +795,7 @@ public class Main : MonoBehaviour
                 {
                     f = solution_flash_color;
                 }
-                foreach (GameObject o in solution_quads)
+                foreach (GameObject o in solution_objects)
                 {
                     set_color(o, f);
                 }
@@ -823,10 +831,10 @@ public class Main : MonoBehaviour
             Quit();
         }
         // cube animation
-        angle += angle_velocity;
-        main_cube.transform.rotation = Quaternion.Euler(angle.x, angle.y, angle.z);
-        angle_velocity *= 0.95f;
-        angle *= 0.65f;
+        cube_angle += cube_angle_velocity;
+        main_cube.transform.rotation = Quaternion.Euler(cube_angle.x, cube_angle.y, cube_angle.z);
+        cube_angle_velocity *= 0.95f;
+        cube_angle *= 0.65f;
 
         update_banner_pos();
 
