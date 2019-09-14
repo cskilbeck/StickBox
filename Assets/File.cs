@@ -9,7 +9,6 @@ public class File : MonoBehaviour
     {
 #if UNITY_EDITOR
         Level loaded = AssetDatabase.LoadAssetAtPath<Level>($"Assets/Resources/{name}");
-        loaded.reset_board();
         return loaded;
 #else
         return Resources.Load<Level>(name);
