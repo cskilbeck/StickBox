@@ -10,56 +10,42 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 400e0d0a81ea6e4448ae238996d50fb2, type: 3}
-  m_Name: level_08
+  m_Name: level_06
   m_EditorClassIdentifier: 
-  width: 12
-  height: 12
+  width: 10
+  height: 10
   start_blocks:
   - position: {x: 1, y: 1}
     flags: 0
-  - position: {x: 2, y: 1}
+  - position: {x: 5, y: 1}
     flags: 0
-  - position: {x: 10, y: 1}
+  - position: {x: 8, y: 1}
     flags: 0
-  - position: {x: 7, y: 9}
-    flags: 0
-  - position: {x: 7, y: 3}
+  - position: {x: 1, y: 8}
     flags: 1
-  - position: {x: 7, y: 2}
+  - position: {x: 5, y: 8}
     flags: 0
-  - position: {x: 1, y: 5}
-    flags: 0
-  - position: {x: 7, y: 5}
-    flags: 0
-  - position: {x: 10, y: 10}
+  - position: {x: 8, y: 8}
     flags: 0
   win_blocks:
-  - {x: 1, y: 10}
-  - {x: 1, y: 9}
+  - {x: 1, y: 8}
+  - {x: 3, y: 8}
+  - {x: 2, y: 8}
+  - {x: 2, y: 7}
+  - {x: 1, y: 7}
+  - {x: 3, y: 7}
+  - {x: 1, y: 7}
+  - {x: 2, y: 7}
+  - {x: 3, y: 7}
   - {x: 1, y: 8}
   - {x: 2, y: 8}
-  - {x: 2, y: 9}
-  - {x: 2, y: 10}
-  - {x: 3, y: 10}
-  - {x: 3, y: 9}
   - {x: 3, y: 8}
-  - {x: 1, y: 8}
-  - {x: 2, y: 8}
-  - {x: 3, y: 8}
-  - {x: 1, y: 9}
-  - {x: 2, y: 9}
-  - {x: 3, y: 9}
-  - {x: 1, y: 10}
-  - {x: 2, y: 10}
-  - {x: 3, y: 10}
   solution:
   - {x: 1, y: 0}
-  - {x: 1, y: 0}
   - {x: 0, y: -1}
   - {x: -1, y: 0}
-  - {x: -1, y: 0}
+  - {x: 1, y: 0}
   - {x: 0, y: 1}
-  - {x: 1, y: 0}
-  - {x: 0, y: -1}
+  - {x: -1, y: 0}
   square_size: 56
   block_depth: 2
