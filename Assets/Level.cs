@@ -118,7 +118,7 @@ public class Level : ScriptableObject
 
     public void copy_blocks_from(Level other)
     {
-        foreach(Block b in other.blocks)
+        foreach (Block b in other.blocks)
         {
             Block n = new Block();
             n.flags = b.flags;
@@ -127,7 +127,7 @@ public class Level : ScriptableObject
         }
         update_block_positions(Vec2i.zero);
     }
-        
+
     //////////////////////////////////////////////////////////////////////
 
     public void destroy_blocks()
@@ -257,14 +257,9 @@ public class Level : ScriptableObject
 
     public void update_hit_blocks(Vec2i direction)
     {
-        Block seed_block = null;
         foreach (Block b in blocks)
         {
-            b.visited = false;
-        }
-        foreach (Block b in blocks)
-        {
-            if (b.stuck && !b.visited)
+            if (b.stuck)
             {
                 for (int i = 1; i < 16; ++i)
                 {
@@ -272,14 +267,10 @@ public class Level : ScriptableObject
                     if (!out_of_bounds(np))
                     {
                         Block c = board[np.x, np.y];
-                        if (c != null && !c.visited && !c.stuck)
+                        if (c != null && !c.stuck)
                         {
-                            if (seed_block == null)
-                            {
-                                seed_block = c;
-                            }
                             c.stuck = true;
-                            c.visited = true;
+                            flood_fill(c);
                             break;
                         }
                         else
@@ -294,11 +285,6 @@ public class Level : ScriptableObject
                 }
             }
         }
-        // now flood fill from all stuck, visited blocks to all touching non-stuck, non-visited blocks
-        if (seed_block != null)
-        {
-            flood_fill(seed_block);
-        }
     }
 
     void flood_fill(Block b)
@@ -309,10 +295,9 @@ public class Level : ScriptableObject
             if (!out_of_bounds(pos))
             {
                 Block c = board[pos.x, pos.y];
-                if (c != null && !c.visited && !c.stuck)
+                if (c != null && !c.stuck)
                 {
                     c.stuck = true;
-                    c.visited = true;
                     flood_fill(c);
                 }
             }

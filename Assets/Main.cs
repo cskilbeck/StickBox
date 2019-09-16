@@ -72,13 +72,13 @@ public class Main : MonoBehaviour
 
     int win_flash_timer;
 
-    float move_start_time;              // wall time when movement started
-    float move_end_time;                // wall time when movement should be complete
-    Vec2i current_move_vector;          // direction they chose to move
-    Level.move_result current_move_result;    // did it stick to a block or the side
-    int move_distance;                  // how far it can move before hitting a block or the side
+    float move_start_time;                      // wall time when movement started
+    float move_end_time;                        // wall time when movement should be complete
+    Vec2i current_move_vector;                  // direction they chose to move
+    Level.move_result current_move_result;      // did it stick to a block or the side
+    int move_distance;                          // how far it can move before hitting a block or the side
 
-    int move_enumerator;   // for showing solution
+    int solution_turn_enumerator;   // for showing solution
 
     Block hover_block;
 
@@ -453,7 +453,7 @@ public class Main : MonoBehaviour
         {
             start_level(current_level);
             current_mode = Game.Mode.prepare_to_show_solution;
-            move_enumerator = current_level.solution.Count - 1;
+            solution_turn_enumerator = current_level.solution.Count - 1;
         }
     }
 
@@ -754,14 +754,14 @@ public class Main : MonoBehaviour
                 break;
 
             case Game.Mode.show_solution:
-                if (move_enumerator < 0)
+                if (solution_turn_enumerator < 0)
                 {
                     current_mode = Game.Mode.prepare_to_play;
                 }
                 else if (mode_time_elapsed > 0.333f)
                 {
-                    current_move_vector = current_level.solution[move_enumerator] * -1;
-                    move_enumerator -= 1;
+                    current_move_vector = current_level.solution[solution_turn_enumerator] * -1;
+                    solution_turn_enumerator -= 1;
                     current_move_result = current_level.get_move_result(current_move_vector, out move_distance);
                     move_start_time = Time.realtimeSinceStartup;
                     move_end_time = move_start_time + (move_distance * 0.04f);
