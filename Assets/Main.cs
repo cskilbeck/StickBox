@@ -127,7 +127,7 @@ public class Main : MonoBehaviour
     //////////////////////////////////////////////////////////////////////
     // UTILS
 
-    public void set_color(GameObject o, Color c)
+    public static void set_color(GameObject o, Color c)
     {
         if (o != null)
         {
