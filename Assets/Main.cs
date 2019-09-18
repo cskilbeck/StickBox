@@ -135,6 +135,18 @@ public class Main : MonoBehaviour
         }
     }
 
+    public static void set_transparent(GameObject o)
+    {
+        Material m = o.GetComponent<Renderer>().material;
+        m.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.One);
+        m.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+        m.SetInt("_ZWrite", 0);
+        m.DisableKeyword("_ALPHATEST_ON");
+        m.DisableKeyword("_ALPHABLEND_ON");
+        m.EnableKeyword("_ALPHAPREMULTIPLY_ON");
+        m.renderQueue = 3000;
+    }
+
     //////////////////////////////////////////////////////////////////////
 
     float lerp(float x)

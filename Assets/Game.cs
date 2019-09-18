@@ -46,8 +46,9 @@ public class Game : MonoBehaviour
     public GameObject create_block_object(Color color, float offset = 0)
     {
         GameObject quad_object = GameObject.CreatePrimitive(PrimitiveType.Cube);
-        //quad_object.GetComponent<Renderer>().material.shader = block_shader;
-        Main.set_color(quad_object, Color.yellow);
+        quad_object.GetComponent<Renderer>().material.shader = block_shader;
+        Main.set_color(quad_object, new Color(1,0,0));
+        //Main.set_transparent(quad_object);
         return quad_object;
     }
 
@@ -58,6 +59,8 @@ public class Game : MonoBehaviour
         o.transform.position = new Vector3(0.0f, 0.0f, 0.0f);
         o.transform.localScale = new Vector3(0.1f, 0.1f, 0.1f);
         o.transform.SetParent(front_face.transform, false);
+
+        Debug.Log(front_face.GetComponent<Renderer>().bounds);
     }
 
     // Update is called once per frame
