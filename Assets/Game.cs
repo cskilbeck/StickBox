@@ -8,6 +8,7 @@ public class Game : MonoBehaviour
 {
     public float square_size = 30;
     public Shader block_shader;
+    public Shader solution_shader;
     public GameObject front_face;
 
     // Modes shared with Editor and Normal Gameplay
@@ -62,6 +63,66 @@ public class Game : MonoBehaviour
         return quad_object;
     }
 
+    bool find_win_block(int2 b)
+    {
+        foreach(int2 p in current_level.win_blocks)
+        {
+            if(p.Equals(b))
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    bool neighbour(int2 b, int2 offset)
+    {
+        int2 target = b + offset;
+        if(target.x < 0 || target.y < 0 || target.x >= current_level.width || target.y >= current_level.height)
+        {
+            return false;
+        }
+        return find_win_block(target);
+    }
+
+    GameObject create_neighbour(int2 b, GameObject parent, int2 board_offset, float angle, Vector3 axis, Vector3 offset)
+    {
+        if (!neighbour(b, board_offset))
+        {
+            GameObject quad = GameObject.CreatePrimitive(PrimitiveType.Quad);
+            quad.GetComponent<Renderer>().material.shader = solution_shader;
+            Main.set_transparent(quad);
+            Main.set_color(quad, new Color(1,1,1,0.15f));
+            quad.transform.SetParent(parent.transform, false);
+            quad.transform.localScale = block_scale;
+            quad.transform.rotation = Quaternion.AngleAxis(angle, axis);
+            quad.transform.localPosition = offset;
+            return quad;
+        }
+        return null;
+    }
+
+    public GameObject create_solution_object(int2 b)
+    {
+        GameObject solution_object = new GameObject();
+        create_neighbour(b, solution_object, left, 90, Vector3.up, new Vector3(-block_scale.x / 2, 0, 0));
+        create_neighbour(b, solution_object, right, -90, Vector3.up, new Vector3(block_scale.x / 2, 0, 0));
+        create_neighbour(b, solution_object, up, 90, Vector3.right, new Vector3(0, block_scale.y / 2, 0));
+        create_neighbour(b, solution_object, down, -90, Vector3.right, new Vector3(0, -block_scale.y / 2, 0));
+
+        GameObject top = GameObject.CreatePrimitive(PrimitiveType.Quad);
+        top.transform.localScale = block_scale;
+        top.GetComponent<Renderer>().material.shader = solution_shader;
+        Main.set_transparent(top);
+        Main.set_color(top, new Color(1, 1, 1, 0.15f));
+        top.transform.SetParent(solution_object.transform, false);
+        top.transform.localPosition = new Vector3(0, 0, -block_scale.z / 2);
+
+        solution_object.transform.SetParent(front_face.transform, false);
+        solution_object.transform.localPosition = board_coordinate(b);
+        return solution_object;
+    }
+
     float3 board_coordinate(int2 pos, float z)
     {
         return board_coordinate(pos);
@@ -69,7 +130,11 @@ public class Game : MonoBehaviour
 
     float3 board_coordinate(int2 pos)
     {
-        return new float3((pos.x - 7.5f) * block_scale.x, (pos.y - 7.5f) * block_scale.x, -block_scale.z / 2);
+        float x_org = -(current_level.width * block_scale.x / 2);
+        float y_org = -(current_level.height * block_scale.y / 2);
+        float x = pos.x * block_scale.x;
+        float y = pos.y * block_scale.y;
+        return new float3(x + x_org, y + y_org, -block_scale.z / 2);
     }
 
     public GameObject create_block_graphic(int2 pos)
@@ -85,6 +150,9 @@ public class Game : MonoBehaviour
         current_level.get_board_coordinate = board_coordinate;
         current_level.create_block_object = create_block_object;
         current_level.create_blocks(Color.yellow, Color.blue);
+        foreach(int2 b in current_level.win_blocks) {
+            GameObject s = create_solution_object(b);
+        }
     }
 
     // Start is called before the first frame update

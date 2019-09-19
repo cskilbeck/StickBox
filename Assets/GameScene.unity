@@ -592,6 +592,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   square_size: 30
   block_shader: {fileID: 46, guid: 0000000000000000f000000000000000, type: 0}
+  solution_shader: {fileID: 46, guid: 0000000000000000f000000000000000, type: 0}
   front_face: {fileID: 45622793}
 --- !u!4 &1027624235
 Transform:
