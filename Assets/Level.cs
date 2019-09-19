@@ -426,12 +426,12 @@ public class Level : ScriptableObject
     //////////////////////////////////////////////////////////////////////
     // BOARD COORDINATES
 
+    public delegate Vector3 get_board_coordinate_delegate(Vec2i p, float z);
+
+    public get_board_coordinate_delegate get_board_coordinate;
+
     public Vector3 board_coordinate(Vec2i p, float z)
     {
-        float x_org = -(width * square_size / 2);
-        float y_org = -(height * square_size / 2);
-        float x = p.x * square_size;
-        float y = p.y * square_size;
-        return new Vector3(x + x_org, y + y_org, z);
+        return get_board_coordinate(p, z);
     }
 }

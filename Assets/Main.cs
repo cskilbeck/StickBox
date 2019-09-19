@@ -340,6 +340,15 @@ public class Main : MonoBehaviour
         }
     }
 
+    Vector3 editor_board_coordinate(Vec2i p, float z)
+    {
+        float x_org = -(current_level.width * square_size / 2);
+        float y_org = -(current_level.height * square_size / 2);
+        float x = p.x * square_size;
+        float y = p.y * square_size;
+        return new Vector3(x + x_org, y + y_org, z);
+    }
+
     //////////////////////////////////////////////////////////////////////
 
     void destroy_grid()
@@ -433,6 +442,7 @@ public class Main : MonoBehaviour
         {
             reset_level(current_level);
             current_level = temp;
+            current_level.get_board_coordinate = editor_board_coordinate;
             start_level(current_level);
         }
         else
@@ -479,6 +489,7 @@ public class Main : MonoBehaviour
     {
         reset_level(current_level);
         current_level = ScriptableObject.CreateInstance<Level>();
+        current_level.get_board_coordinate = editor_board_coordinate;
         current_level.reset(square_size, block_depth);
         current_level.create_board(16, 16);
         current_mode = Game.Mode.set_grid_size;
@@ -509,6 +520,7 @@ public class Main : MonoBehaviour
         solution_objects = new List<GameObject>();
         cursor_quad = create_block_object(Color.magenta, square_size * 0.3f);
         current_level = ScriptableObject.CreateInstance<Level>();
+        current_level.get_board_coordinate = editor_board_coordinate;
         current_mode = Game.Mode.set_grid_size;
     }
 
@@ -630,6 +642,7 @@ public class Main : MonoBehaviour
                 if (Input.GetMouseButtonDown(0))
                 {
                     current_level = ScriptableObject.CreateInstance<Level>();
+                    current_level.get_board_coordinate = editor_board_coordinate;
                     current_level.reset(square_size, block_depth);
                     reset_level(current_level);
                     current_level.create_board(bw, bh);
