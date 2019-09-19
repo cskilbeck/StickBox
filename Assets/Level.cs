@@ -419,18 +419,50 @@ public class Level : ScriptableObject
 
     public void update_block_graphics_position(Block b)
     {
-        b.game_object.transform.position = board_coordinate(b.position, block_depth);
+        b.game_object.transform.localPosition = board_coordinate(b.position, block_depth);
     }
 
     //////////////////////////////////////////////////////////////////////
     // BOARD COORDINATES
 
-    public delegate Vector3 get_board_coordinate_delegate(int2 p, float z);
+    public delegate float3 get_board_coordinate_delegate(int2 p, float z);
 
     public get_board_coordinate_delegate get_board_coordinate;
 
-    public Vector3 board_coordinate(int2 p, float z)
+    public float3 board_coordinate(int2 p, float z)
     {
         return get_board_coordinate(p, z);
+    }
+
+    //////////////////////////////////////////////////////////////////////
+    // BLOCK/BOARD CREATION
+
+    public delegate GameObject create_block_object_delegate(Color c);
+
+    public create_block_object_delegate create_block_object;
+
+    public Block create_block(int2 position, Block.Flags flags, Color c)
+    {
+        GameObject quad = create_block_object(c);
+        Block b = new Block();
+        b.position = position;
+        b.game_object = quad;
+        b.flags = flags;
+        return b;
+    }
+
+    public void create_blocks(Color stuck_color, Color moving_color)
+    {
+        destroy_blocks();
+        reset_board();
+        foreach (Block p in start_blocks)
+        {
+            Color block_color = p.stuck ? stuck_color : moving_color;
+            Block block = create_block(p.position, p.flags, block_color);
+            blocks.Add(block);
+            set_block_at(p.position, block);
+            set_block_position(block, p.position);
+            update_block_graphics();
+        }
     }
 }

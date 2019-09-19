@@ -57,7 +57,14 @@ public class Game : MonoBehaviour
         GameObject quad_object = GameObject.CreatePrimitive(PrimitiveType.Cube);
         quad_object.GetComponent<Renderer>().material.shader = block_shader;
         Main.set_color(quad_object, color);
+        quad_object.transform.localScale = block_scale;
+        quad_object.transform.SetParent(front_face.transform, false);
         return quad_object;
+    }
+
+    float3 board_coordinate(int2 pos, float z)
+    {
+        return board_coordinate(pos);
     }
 
     float3 board_coordinate(int2 pos)
@@ -65,18 +72,20 @@ public class Game : MonoBehaviour
         return new float3((pos.x - 7.5f) * block_scale.x, (pos.y - 7.5f) * block_scale.x, -block_scale.z / 2);
     }
 
-    public GameObject create_block(int2 pos)
+    public GameObject create_block_graphic(int2 pos)
     {
         GameObject o = create_block_object(new Color(1, 0, 0));
-        o.transform.localScale = block_scale;
-        o.transform.SetParent(front_face.transform, false);
         o.transform.localPosition = board_coordinate(pos);
         return o;
     }
 
-    GameObject s;
-    float3 target;
-    float start_time;
+    void load_level(string name)
+    {
+        current_level = File.load_level($"level_{name}.asset");
+        current_level.get_board_coordinate = board_coordinate;
+        current_level.create_block_object = create_block_object;
+        current_level.create_blocks(Color.yellow, Color.blue);
+    }
 
     // Start is called before the first frame update
     void Start()
@@ -90,17 +99,7 @@ public class Game : MonoBehaviour
         float z_scale = Mathf.Max(x_scale, y_scale);
         block_scale = new float3(x_scale, y_scale, z_scale);
 
-        s = create_block(new int2(0, 0));
-        create_block(new int2(7, 0));
-        create_block(new int2(8, 0));
-        create_block(new int2(9, 0));
-        create_block(new int2(7, 1));
-        create_block(new int2(7, 2));
-        create_block(new int2(15, 0));
-        create_block(new int2(15, 15));
-
-        target = board_coordinate(new int2(0, 15));
-        start_time = Time.realtimeSinceStartup;
+        load_level("10");
     }
 
     float3 lerp(float3 a, float3 b, float t)
@@ -111,9 +110,5 @@ public class Game : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        float3 a = board_coordinate(new int2(0, 0));
-        float3 b = board_coordinate(new int2(0, 15));
-        float t = Mathf.Min(4, Time.realtimeSinceStartup - start_time);
-        s.transform.localPosition = lerp(a, b, t / 4);
     }
 }

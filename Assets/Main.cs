@@ -66,8 +66,8 @@ public class Main : MonoBehaviour
 
     int2 move_direction;
 
-    Vector3 cube_angle;
-    Vector3 cube_angle_velocity;
+    float3 cube_angle;
+    float3 cube_angle_velocity;
 
     int win_flash_timer;
 
@@ -186,8 +186,8 @@ public class Main : MonoBehaviour
         else
         {
             float x = banner_text_movement_curve.Evaluate(t * 0.333f) * 4 - 2;
-            Vector3 p = banner_text.transform.position;
-            banner_text.transform.position = new Vector3(x, p.y, p.z);
+            float3 p = banner_text.transform.position;
+            banner_text.transform.position = new float3(x, p.y, p.z);
             banner_text.SetActive(true);
         }
     }
@@ -257,6 +257,17 @@ public class Main : MonoBehaviour
         return quad_object;
     }
 
+    public GameObject create_block_object(Color color)
+    {
+        return create_block_object(color, 0);
+    }
+
+    Block create_block(Block o)
+    {
+        Color c = o.stuck ? stuck_color : moving_color;
+        return current_level.create_block(o.position, o.flags, c);
+    }
+
     //////////////////////////////////////////////////////////////////////
 
     void create_grid(int wide, int high, float cell_size, Color color, float line_width)
@@ -289,7 +300,7 @@ public class Main : MonoBehaviour
         Ray ray = main_camera.ScreenPointToRay(mouse_pos);
         if (Physics.Raycast(ray, out RaycastHit hit))
         {
-            Vector3 hit_pos = hit.transform.InverseTransformPoint(hit.point);
+            float3 hit_pos = hit.transform.InverseTransformPoint(hit.point);
             float gw = board_width * square_size;
             float gh = board_height * square_size;
             float ox = hit_pos.x * playfield_texture.width / gw;
@@ -311,41 +322,13 @@ public class Main : MonoBehaviour
 
     //////////////////////////////////////////////////////////////////////
 
-    Block create_block(Block o)
-    {
-        Color c = o.stuck ? stuck_color : moving_color;
-        GameObject quad = create_block_object(c);
-        Block b = new Block();
-        b.position = o.position;
-        b.game_object = quad;
-        b.flags = o.flags;
-        return b;
-    }
-
-    void create_level_quads()
-    {
-        current_level.destroy_blocks();
-        current_level.clear_the_board();
-
-        foreach (Block p in current_level.start_blocks)
-        {
-            Color block_color = p.stuck ? stuck_color : moving_color;
-            Block block = create_block(p);
-            set_color(block.game_object, block_color);
-            current_level.blocks.Add(block);
-            current_level.set_block_at(p.position, block);
-            current_level.set_block_position(block, p.position);
-            current_level.update_block_graphics();
-        }
-    }
-
-    Vector3 editor_board_coordinate(int2 p, float z)
+    float3 editor_board_coordinate(int2 p, float z)
     {
         float x_org = -(current_level.width * square_size / 2);
         float y_org = -(current_level.height * square_size / 2);
         float x = p.x * square_size;
         float y = p.y * square_size;
-        return new Vector3(x + x_org, y + y_org, z);
+        return new float3(x + x_org, y + y_org, z);
     }
 
     //////////////////////////////////////////////////////////////////////
@@ -409,8 +392,8 @@ public class Main : MonoBehaviour
         destroy_grid();
         destroy_solution();
 
-        cube_angle = new Vector3(0, 0, 0);
-        cube_angle_velocity = new Vector3(0, 0, 0);
+        cube_angle = new float3(0, 0, 0);
+        cube_angle_velocity = new float3(0, 0, 0);
         win_flash_timer = 0;
     }
 
@@ -419,7 +402,7 @@ public class Main : MonoBehaviour
         destroy_grid();
         reset_level(current_level);
         level.destroy_blocks();
-        create_level_quads();
+        level.create_blocks(stuck_color, moving_color);
         create_grid(current_level.width, current_level.height, square_size, grid_color, grid_line_width);
         destroy_solution();
         foreach (int2 s in current_level.win_blocks)
@@ -442,6 +425,7 @@ public class Main : MonoBehaviour
             reset_level(current_level);
             current_level = temp;
             current_level.get_board_coordinate = editor_board_coordinate;
+            current_level.create_block_object = create_block_object;
             start_level(current_level);
         }
         else
@@ -489,6 +473,7 @@ public class Main : MonoBehaviour
         reset_level(current_level);
         current_level = ScriptableObject.CreateInstance<Level>();
         current_level.get_board_coordinate = editor_board_coordinate;
+        current_level.create_block_object = create_block_object;
         current_level.reset(square_size, block_depth);
         current_level.create_board(16, 16);
         current_mode = Game.Mode.set_grid_size;
@@ -520,6 +505,7 @@ public class Main : MonoBehaviour
         cursor_quad = create_block_object(Color.magenta, square_size * 0.3f);
         current_level = ScriptableObject.CreateInstance<Level>();
         current_level.get_board_coordinate = editor_board_coordinate;
+        current_level.create_block_object = create_block_object;
         current_mode = Game.Mode.set_grid_size;
     }
 
@@ -605,7 +591,7 @@ public class Main : MonoBehaviour
                     set_color(b.game_object, final_color);
                 }
             }
-            cube_angle_velocity = new Vector3(current_move_vector.y, -current_move_vector.x, 0) * 2;
+            cube_angle_velocity = new float3(current_move_vector.y, -current_move_vector.x, 0) * 2;
         }
         else
         {
@@ -613,11 +599,11 @@ public class Main : MonoBehaviour
             {
                 if (b.stuck)
                 {
-                    Vector3 org = current_level.board_coordinate(b.position, block_depth);
+                    float3 org = current_level.board_coordinate(b.position, block_depth);
                     float t = block_movement_curve.Evaluate(normalized_time);
                     float d = move_distance * t * square_size;
-                    Vector3 movement = new Vector3(current_move_vector.x * d, current_move_vector.y * d, block_depth);
-                    Vector3 new_pos = org + movement;
+                    float3 movement = new float3(current_move_vector.x * d, current_move_vector.y * d, block_depth);
+                    float3 new_pos = org + movement;
                     b.game_object.transform.position = new Vector3(new_pos.x, new_pos.y, block_depth);
                 }
             }
@@ -642,6 +628,7 @@ public class Main : MonoBehaviour
                 {
                     current_level = ScriptableObject.CreateInstance<Level>();
                     current_level.get_board_coordinate = editor_board_coordinate;
+                    current_level.create_block_object = create_block_object;
                     current_level.reset(square_size, block_depth);
                     reset_level(current_level);
                     current_level.create_board(bw, bh);
