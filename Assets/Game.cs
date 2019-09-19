@@ -42,7 +42,6 @@ public class Game : MonoBehaviour
     int move_distance;                          // how far it can move before hitting a block or the side
     int move_enumerator;                        // for showing solution
 
-    Level loaded_level;
     Level current_level;
 
     //////////////////////////////////////////////////////////////////////
