@@ -2,6 +2,7 @@
 
 using System;
 using UnityEngine;
+using Unity.Mathematics;
 
 //////////////////////////////////////////////////////////////////////
 
@@ -19,7 +20,7 @@ public class Block
         flag_all = 0xffffffff
     };
 
-    public Vector2Int position;
+    public int2 position;
     public Flags flags = Flags.flag_none;
 
     [NonSerialized]

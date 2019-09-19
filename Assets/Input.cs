@@ -1,7 +1,6 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
-
-using Vec2i = UnityEngine.Vector2Int;
+using Unity.Mathematics;
 
 public static class KeyboardInput
 {
@@ -10,31 +9,31 @@ public static class KeyboardInput
 
     static KeyCode[] movement_keys = new KeyCode[] { KeyCode.LeftArrow, KeyCode.RightArrow, KeyCode.UpArrow, KeyCode.DownArrow };
 
-    static Dictionary<KeyCode, Vec2i> moves = new Dictionary<KeyCode, Vec2i> {
-        {  KeyCode.LeftArrow, Vec2i.left },
-        {  KeyCode.RightArrow, Vec2i.right },
-        {  KeyCode.UpArrow, Vec2i.up },
-        {  KeyCode.DownArrow, Vec2i.down },
+    static Dictionary<KeyCode, int2> moves = new Dictionary<KeyCode, int2> {
+        {  KeyCode.LeftArrow, Game.left },
+        {  KeyCode.RightArrow, Game.right },
+        {  KeyCode.UpArrow, Game.up },
+        {  KeyCode.DownArrow, Game.down },
     };
 
-    readonly static Vec2i[] compass_directions = new Vec2i[4]
+    readonly static int2[] compass_directions = new int2[4]
     {
-        Vec2i.up,
-        Vec2i.right,
-        Vec2i.down,
-        Vec2i.left
+        Game.up,
+        Game.right,
+        Game.down,
+        Game.left
     };
 
-    public static Vec2i get_movement_from_keycode(KeyCode key)
+    public static int2 get_movement_from_keycode(KeyCode key)
     {
-        if (moves.TryGetValue(key, out Vec2i dir))
+        if (moves.TryGetValue(key, out int2 dir))
         {
             return dir;
         }
-        return Vec2i.zero;
+        return int2.zero;
     }
 
-    public static Vec2i get_key_movement()
+    public static int2 get_key_movement()
     {
         foreach (KeyCode key in movement_keys)
         {
@@ -43,7 +42,7 @@ public static class KeyboardInput
                 return get_movement_from_keycode(key);
             }
         }
-        return Vec2i.zero;
+        return int2.zero;
     }
 
 }

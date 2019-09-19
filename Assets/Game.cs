@@ -2,8 +2,7 @@
 using System.Collections.Generic;
 
 using UnityEngine;
-
-using Vec2i = UnityEngine.Vector2Int;
+using Unity.Mathematics;
 
 public class Game : MonoBehaviour
 {
@@ -12,6 +11,11 @@ public class Game : MonoBehaviour
     public GameObject front_face;
 
     // Modes shared with Editor and Normal Gameplay
+
+    public static readonly int2 left = new int2(-1, 0);
+    public static readonly int2 right = new int2(1, 0);
+    public static readonly int2 up = new int2(0, 1);
+    public static readonly int2 down = new int2(0, -1);
 
     public enum Mode
     {
@@ -33,7 +37,7 @@ public class Game : MonoBehaviour
     float move_start_time;              // wall time when movement started
     float move_end_time;                // wall time when movement should be complete
 
-    Vec2i current_move_vector;                  // direction they chose to move
+    int2 current_move_vector;                  // direction they chose to move
     Level.move_result current_move_result;      // did it stick to a block or the side
     int move_distance;                          // how far it can move before hitting a block or the side
     int move_enumerator;                        // for showing solution
@@ -45,7 +49,7 @@ public class Game : MonoBehaviour
 
     static readonly int max_grid_width = 16;
     static readonly int max_grid_height = 16;
-    static Vector3 block_scale;
+    static float3 block_scale;
 
     //////////////////////////////////////////////////////////////////////
 
@@ -57,12 +61,12 @@ public class Game : MonoBehaviour
         return quad_object;
     }
 
-    Vector3 board_coordinate(Vec2i pos)
+    float3 board_coordinate(int2 pos)
     {
-        return new Vector3((pos.x - 7.5f) * block_scale.x, (pos.y - 7.5f) * block_scale.x, -block_scale.z / 2);
+        return new float3((pos.x - 7.5f) * block_scale.x, (pos.y - 7.5f) * block_scale.x, -block_scale.z / 2);
     }
 
-    public GameObject create_block(Vec2i pos)
+    public GameObject create_block(int2 pos)
     {
         GameObject o = create_block_object(new Color(1, 0, 0));
         o.transform.localScale = block_scale;
@@ -72,7 +76,7 @@ public class Game : MonoBehaviour
     }
 
     GameObject s;
-    Vector3 target;
+    float3 target;
     float start_time;
 
     // Start is called before the first frame update
@@ -85,27 +89,32 @@ public class Game : MonoBehaviour
         float x_scale = face_width / (max_grid_width + 1);
         float y_scale = face_height / (max_grid_height + 1);
         float z_scale = Mathf.Max(x_scale, y_scale);
-        block_scale = new Vector3(x_scale, y_scale, z_scale);
+        block_scale = new float3(x_scale, y_scale, z_scale);
 
-        s = create_block(new Vec2i(0, 0));
-        create_block(new Vec2i(7, 0));
-        create_block(new Vec2i(8, 0));
-        create_block(new Vec2i(9, 0));
-        create_block(new Vec2i(7, 1));
-        create_block(new Vec2i(7, 2));
-        create_block(new Vec2i(15, 0));
-        create_block(new Vec2i(15, 15));
+        s = create_block(new int2(0, 0));
+        create_block(new int2(7, 0));
+        create_block(new int2(8, 0));
+        create_block(new int2(9, 0));
+        create_block(new int2(7, 1));
+        create_block(new int2(7, 2));
+        create_block(new int2(15, 0));
+        create_block(new int2(15, 15));
 
-        target = board_coordinate(new Vec2i(0, 15));
+        target = board_coordinate(new int2(0, 15));
         start_time = Time.realtimeSinceStartup;
+    }
+
+    float3 lerp(float3 a, float3 b, float t)
+    {
+        return (b - a) * t + a;
     }
 
     // Update is called once per frame
     void Update()
     {
-        Vector3 a = board_coordinate(new Vec2i(0, 0));
-        Vector3 b = board_coordinate(new Vec2i(0, 15));
+        float3 a = board_coordinate(new int2(0, 0));
+        float3 b = board_coordinate(new int2(0, 15));
         float t = Mathf.Min(4, Time.realtimeSinceStartup - start_time);
-        s.transform.localPosition = Vector3.Lerp(a, b, t / 4);
+        s.transform.localPosition = lerp(a, b, t / 4);
     }
 }

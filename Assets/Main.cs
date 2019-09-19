@@ -5,11 +5,10 @@
 
 using System.Collections.Generic;
 using System.Text;
+using Unity.Mathematics;
 using UnityEngine;
 using UnityEditor;
 using UnityEngine.UI;
-
-using Vec2i = UnityEngine.Vector2Int;
 
 //////////////////////////////////////////////////////////////////////
 
@@ -65,7 +64,7 @@ public class Main : MonoBehaviour
     float grid_width;
     float grid_height;
 
-    Vec2i move_direction;
+    int2 move_direction;
 
     Vector3 cube_angle;
     Vector3 cube_angle_velocity;
@@ -74,7 +73,7 @@ public class Main : MonoBehaviour
 
     float move_start_time;                      // wall time when movement started
     float move_end_time;                        // wall time when movement should be complete
-    Vec2i current_move_vector;                  // direction they chose to move
+    int2 current_move_vector;                  // direction they chose to move
     Level.move_result current_move_result;      // did it stick to a block or the side
     int move_distance;                          // how far it can move before hitting a block or the side
 
@@ -304,10 +303,10 @@ public class Main : MonoBehaviour
 
     //////////////////////////////////////////////////////////////////////
 
-    Vec2i intersect_front_face(int board_width, int board_height, Vector2 mouse_pos)
+    int2 intersect_front_face(int board_width, int board_height, Vector2 mouse_pos)
     {
         Vector2 v = intersect_front_face_f(board_width, board_height, mouse_pos);
-        return new Vec2i((int)v.x, (int)v.y);
+        return new int2((int)v.x, (int)v.y);
     }
 
     //////////////////////////////////////////////////////////////////////
@@ -340,7 +339,7 @@ public class Main : MonoBehaviour
         }
     }
 
-    Vector3 editor_board_coordinate(Vec2i p, float z)
+    Vector3 editor_board_coordinate(int2 p, float z)
     {
         float x_org = -(current_level.width * square_size / 2);
         float y_org = -(current_level.height * square_size / 2);
@@ -382,7 +381,7 @@ public class Main : MonoBehaviour
         int move = l.solution.Count - 1;
         while (move >= 0)
         {
-            Vec2i v = l.solution[move] * -1;
+            int2 v = l.solution[move] * -1;
             move -= 1;
             int distance;
             Level.move_result r = l.get_move_result(v, out distance);
@@ -397,7 +396,7 @@ public class Main : MonoBehaviour
             l.update_block_positions(v * distance);
             l.update_hit_blocks(v);
         }
-        return l.is_solution_complete(Vec2i.zero);
+        return l.is_solution_complete(int2.zero);
     }
 
     //////////////////////////////////////////////////////////////////////
@@ -423,7 +422,7 @@ public class Main : MonoBehaviour
         create_level_quads();
         create_grid(current_level.width, current_level.height, square_size, grid_color, grid_line_width);
         destroy_solution();
-        foreach (Vec2i s in current_level.win_blocks)
+        foreach (int2 s in current_level.win_blocks)
         {
             GameObject block = create_block_object(solution_color);
             block.transform.position = current_level.board_coordinate(s, solution_depth);
@@ -529,7 +528,7 @@ public class Main : MonoBehaviour
 
     void choose_unstuck_blocks()
     {
-        Vec2i hover_pos = intersect_front_face(current_level.width, current_level.height, Input.mousePosition);
+        int2 hover_pos = intersect_front_face(current_level.width, current_level.height, Input.mousePosition);
         hover_block = null;
         if (current_level.count_stuck_blocks() > 1)
         {
@@ -554,7 +553,7 @@ public class Main : MonoBehaviour
             cursor_quad.transform.position = current_level.board_coordinate(hover_pos, cursor_depth);
             if (Input.GetMouseButtonDown(0))
             {
-                move_direction = Vec2i.zero;
+                move_direction = int2.zero;
                 set_color(hover_block.game_object, moving_color);
                 hover_block.stuck = false;
             }
@@ -593,7 +592,7 @@ public class Main : MonoBehaviour
             {
                 // collide and landed on the solution at the same time
                 bool all_stuck = current_level.count_free_blocks() == 0;
-                if (all_stuck && current_level.is_solution_complete(Vec2i.zero))
+                if (all_stuck && current_level.is_solution_complete(int2.zero))
                 {
                     current_mode = Game.Mode.winner;
                     final_color = win_color;
@@ -654,7 +653,7 @@ public class Main : MonoBehaviour
 
             // click some squares to create the solution blocks
             case Game.Mode.create_solution:
-                Vec2i cp = intersect_front_face(current_level.width, current_level.height, Input.mousePosition);
+                int2 cp = intersect_front_face(current_level.width, current_level.height, Input.mousePosition);
                 if (current_level.out_of_bounds(cp))
                 {
                     cursor_quad.SetActive(false);
@@ -699,7 +698,7 @@ public class Main : MonoBehaviour
                     if (Input.GetMouseButtonDown(1))
                     {
                         current_level.solution.Clear();
-                        move_direction = Vec2i.zero;
+                        move_direction = int2.zero;
                         cursor_quad.SetActive(false);
                         foreach (GameObject b in solution_objects)
                         {
@@ -731,16 +730,17 @@ public class Main : MonoBehaviour
             case Game.Mode.edit_solution:
 
                 choose_unstuck_blocks();
-                Vec2i start_movement = KeyboardInput.get_key_movement();  // check if it's valid to move in this direction
+                int2 start_movement = KeyboardInput.get_key_movement();  // check if it's valid to move in this direction
 
-                if (start_movement != Vec2i.zero)
+                if (!start_movement.Equals(int2.zero))
                 {
-                    if (move_direction == Vec2i.zero)
+                    if (move_direction.Equals(int2.zero))
                     {
+                        Debug.Log("Movement!");
                         move_direction = start_movement;
                         current_level.solution.Add(move_direction);
                     }
-                    if (move_direction == start_movement)
+                    if (move_direction.Equals(start_movement))
                     {
                         current_level.move_all_stuck_blocks(start_movement);
                     }
@@ -748,7 +748,7 @@ public class Main : MonoBehaviour
                     {
                         current_level.move_all_stuck_blocks(start_movement * -1);
                         current_level.solution.RemoveAt(current_level.solution.Count - 1);
-                        move_direction = Vec2i.zero;
+                        move_direction = int2.zero;
                     }
                 }
                 if (Input.GetKeyDown(KeyCode.P))
@@ -804,7 +804,7 @@ public class Main : MonoBehaviour
 
             case Game.Mode.make_move:
                 current_move_vector = KeyboardInput.get_key_movement();
-                if (current_move_vector != Vec2i.zero)
+                if (!current_move_vector.Equals(int2.zero))
                 {
                     current_move_result = current_level.get_move_result(current_move_vector, out move_distance);
                     move_start_time = Time.realtimeSinceStartup;
