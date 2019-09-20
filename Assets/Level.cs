@@ -22,9 +22,6 @@ public class Level : ScriptableObject
     public List<int2> win_blocks = new List<int2>();                  // the solution
     public List<int2> solution = new List<int2>();                    // play these keys to solve it (only from the beginning)
 
-    public float square_size;
-    public float block_depth;
-
     //////////////////////////////////////////////////////////////////////
 
     [NonSerialized]
@@ -398,13 +395,10 @@ public class Level : ScriptableObject
         }
     }
 
-    public void reset(float square_size_, float block_depth_)
+    public void reset()
     {
-        square_size = square_size_;
-        block_depth = block_depth_;
-        reset_board();
         destroy_blocks();
-
+        reset_board();
     }
 
     //////////////////////////////////////////////////////////////////////
@@ -419,19 +413,19 @@ public class Level : ScriptableObject
 
     public void update_block_graphics_position(Block b)
     {
-        b.game_object.transform.localPosition = board_coordinate(b.position, block_depth);
+        b.game_object.transform.localPosition = board_coordinate(b.position);
     }
 
     //////////////////////////////////////////////////////////////////////
     // BOARD COORDINATES
 
-    public delegate float3 get_board_coordinate_delegate(int2 p, float z);
+    public delegate float3 get_board_coordinate_delegate(int2 p);
 
     public get_board_coordinate_delegate get_board_coordinate;
 
-    public float3 board_coordinate(int2 p, float z)
+    public float3 board_coordinate(int2 p)
     {
-        return get_board_coordinate(p, z);
+        return get_board_coordinate(p);
     }
 
     //////////////////////////////////////////////////////////////////////

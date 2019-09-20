@@ -322,7 +322,12 @@ public class Main : MonoBehaviour
 
     //////////////////////////////////////////////////////////////////////
 
-    float3 editor_board_coordinate(int2 p, float z)
+    float3 editor_board_coordinate(int2 p)
+    {
+        return board_coordinate_z(p, block_depth);
+    }
+
+    float3 board_coordinate_z(int2 p, float z)
     {
         float x_org = -(current_level.width * square_size / 2);
         float y_org = -(current_level.height * square_size / 2);
@@ -388,7 +393,7 @@ public class Main : MonoBehaviour
     public void reset_level(Level level)
     {
         level.destroy_blocks();
-        level.reset(square_size, block_depth);
+        level.reset();
         destroy_grid();
         destroy_solution();
 
@@ -408,7 +413,8 @@ public class Main : MonoBehaviour
         foreach (int2 s in current_level.win_blocks)
         {
             GameObject block = create_block_object(solution_color);
-            block.transform.position = current_level.board_coordinate(s, solution_depth);
+            float3 p = current_level.board_coordinate(s);
+            block.transform.position = new float3(p.x, p.y, solution_depth);
             solution_objects.Add(block);
         }
         current_mode = Game.Mode.prepare_to_play;
@@ -474,7 +480,7 @@ public class Main : MonoBehaviour
         current_level = ScriptableObject.CreateInstance<Level>();
         current_level.get_board_coordinate = editor_board_coordinate;
         current_level.create_block_object = create_block_object;
-        current_level.reset(square_size, block_depth);
+        current_level.reset();
         current_level.create_board(16, 16);
         current_mode = Game.Mode.set_grid_size;
     }
@@ -536,7 +542,7 @@ public class Main : MonoBehaviour
         else
         {
             cursor_quad.SetActive(true);
-            cursor_quad.transform.position = current_level.board_coordinate(hover_pos, cursor_depth);
+            cursor_quad.transform.position = board_coordinate_z(hover_pos, cursor_depth);
             if (Input.GetMouseButtonDown(0))
             {
                 move_direction = int2.zero;
@@ -599,7 +605,7 @@ public class Main : MonoBehaviour
             {
                 if (b.stuck)
                 {
-                    float3 org = current_level.board_coordinate(b.position, block_depth);
+                    float3 org = current_level.board_coordinate(b.position);
                     float t = block_movement_curve.Evaluate(normalized_time);
                     float d = move_distance * t * square_size;
                     float3 movement = new float3(current_move_vector.x * d, current_move_vector.y * d, block_depth);
@@ -629,7 +635,7 @@ public class Main : MonoBehaviour
                     current_level = ScriptableObject.CreateInstance<Level>();
                     current_level.get_board_coordinate = editor_board_coordinate;
                     current_level.create_block_object = create_block_object;
-                    current_level.reset(square_size, block_depth);
+                    current_level.reset();
                     reset_level(current_level);
                     current_level.create_board(bw, bh);
                     current_mode = Game.Mode.create_solution;
@@ -648,7 +654,7 @@ public class Main : MonoBehaviour
                 else
                 {
                     Color cursor_color = Color.magenta;
-                    cursor_quad.transform.position = current_level.board_coordinate(cp, cursor_depth);
+                    cursor_quad.transform.position = board_coordinate_z(cp, cursor_depth);
                     cursor_quad.SetActive(true);
                     Block cb = current_level.block_at(cp);
                     if (cb != null)
@@ -673,7 +679,7 @@ public class Main : MonoBehaviour
                             Block b = new Block();
                             b.position = cp;
                             b.game_object = create_block_object(solution_color);
-                            b.game_object.transform.position = current_level.board_coordinate(cp, solution_depth);
+                            b.game_object.transform.position = board_coordinate_z(cp, solution_depth);
                             current_level.set_block_at(cp, b);
                             solution_objects.Add(b.game_object);
                             current_level.win_blocks.Add(cp);
@@ -701,7 +707,7 @@ public class Main : MonoBehaviour
                                 {
                                     current_level.win_blocks.Add(blk.position);
                                     blk.game_object = create_block_object(stuck_color);
-                                    blk.game_object.transform.position = current_level.board_coordinate(blk.position, block_depth);
+                                    blk.game_object.transform.position = board_coordinate_z(blk.position, block_depth);
                                     blk.stuck = true;
                                     current_level.blocks.Add(blk);
                                 }
