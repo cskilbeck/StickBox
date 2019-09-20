@@ -3,7 +3,15 @@ guid: ec13954e17b35254486ae6abb3681d4e
 ShaderImporter:
   externalObjects: {}
   defaultTextures:
-  - _MainTex: {fileID: 10309, guid: 0000000000000000f000000000000000, type: 0}
+  - _MainTex: {fileID: 10904, guid: 0000000000000000f000000000000000, type: 0}
+  - _MetallicGlossMap: {instanceID: 0}
+  - _BumpMap: {instanceID: 0}
+  - _ParallaxMap: {instanceID: 0}
+  - _OcclusionMap: {instanceID: 0}
+  - _EmissionMap: {instanceID: 0}
+  - _DetailMask: {instanceID: 0}
+  - _DetailAlbedoMap: {instanceID: 0}
+  - _DetailNormalMap: {instanceID: 0}
   nonModifiableTextures: []
   userData: 
   assetBundleName: 

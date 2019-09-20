@@ -81,30 +81,11 @@ public class Main : MonoBehaviour
 
     Block hover_block;
 
-    Game.Mode _current_mode;
-
-    float mode_timer;
-
     float mode_time_elapsed
     {
         get
         {
-            return Time.realtimeSinceStartup - mode_timer;
-        }
-    }
-
-    Game.Mode current_mode
-    {
-        get => _current_mode;
-        set
-        {
-            _current_mode = value;
-            mode_timer = Time.realtimeSinceStartup;
-            string s;
-            if (mode_banners.TryGetValue(_current_mode, out s))
-            {
-                set_banner_text(s);
-            }
+            return Time.realtimeSinceStartup - Game.mode_timer;
         }
     }
 
@@ -153,15 +134,6 @@ public class Main : MonoBehaviour
         float x2 = x * x;
         float x3 = x2 * x;
         return 3 * x2 - 2 * x3;
-    }
-
-    public static void Quit()
-    {
-#if UNITY_EDITOR
-        UnityEditor.EditorApplication.isPlaying = false;
-#else
-        Application.Quit();
-#endif
     }
 
     void debug(string s)
@@ -417,7 +389,7 @@ public class Main : MonoBehaviour
             block.transform.position = new float3(p.x, p.y, solution_depth);
             solution_objects.Add(block);
         }
-        current_mode = Game.Mode.prepare_to_play;
+        Game.current_mode = Game.Mode.prepare_to_play;
     }
 
     //////////////////////////////////////////////////////////////////////
@@ -463,7 +435,7 @@ public class Main : MonoBehaviour
         else
         {
             start_level(current_level);
-            current_mode = Game.Mode.prepare_to_show_solution;
+            Game.current_mode = Game.Mode.prepare_to_show_solution;
             solution_turn_enumerator = current_level.solution.Count - 1;
         }
     }
@@ -471,7 +443,7 @@ public class Main : MonoBehaviour
     public void on_reset_level_click()
     {
         start_level(current_level);
-        current_mode = Game.Mode.make_move;
+        Game.current_mode = Game.Mode.make_move;
     }
 
     public void on_new_level_click()
@@ -482,7 +454,7 @@ public class Main : MonoBehaviour
         current_level.create_block_object = create_block_object;
         current_level.reset();
         current_level.create_board(16, 16);
-        current_mode = Game.Mode.set_grid_size;
+        Game.current_mode = Game.Mode.set_grid_size;
     }
 
     public void on_load_level_click()
@@ -512,7 +484,7 @@ public class Main : MonoBehaviour
         current_level = ScriptableObject.CreateInstance<Level>();
         current_level.get_board_coordinate = editor_board_coordinate;
         current_level.create_block_object = create_block_object;
-        current_mode = Game.Mode.set_grid_size;
+        Game.current_mode = Game.Mode.set_grid_size;
     }
 
     //////////////////////////////////////////////////////////////////////
@@ -568,17 +540,17 @@ public class Main : MonoBehaviour
             current_level.update_block_graphics();
             current_level.update_hit_blocks(current_move_vector);
             Color final_color = stuck_color;
-            current_mode = next_mode;
+            Game.current_mode = next_mode;
 
             if (current_move_result == Level.move_result.hit_solution)
             {
-                current_mode = Game.Mode.winner;
+                Game.current_mode = Game.Mode.winner;
                 final_color = win_color;
             }
             else if (current_move_result == Level.move_result.hit_side)
             {
                 final_color = fail_color;
-                current_mode = Game.Mode.failed;
+                Game.current_mode = Game.Mode.failed;
             }
             else
             {
@@ -586,7 +558,7 @@ public class Main : MonoBehaviour
                 bool all_stuck = current_level.count_free_blocks() == 0;
                 if (all_stuck && current_level.is_solution_complete(int2.zero))
                 {
-                    current_mode = Game.Mode.winner;
+                    Game.current_mode = Game.Mode.winner;
                     final_color = win_color;
                 }
             }
@@ -620,7 +592,7 @@ public class Main : MonoBehaviour
 
     void Update()
     {
-        switch (current_mode)
+        switch (Game.current_mode)
         {
             // drag mouse to set size of grid
             case Game.Mode.set_grid_size:
@@ -638,7 +610,7 @@ public class Main : MonoBehaviour
                     current_level.reset();
                     reset_level(current_level);
                     current_level.create_board(bw, bh);
-                    current_mode = Game.Mode.create_solution;
+                    Game.current_mode = Game.Mode.create_solution;
                     Debug.Log($"Board is {bw}x{bh}");
                 }
                 create_grid(bw, bh, square_size, grid_color, grid_line_width);
@@ -713,7 +685,7 @@ public class Main : MonoBehaviour
                                 }
                             }
                         }
-                        current_mode = Game.Mode.edit_solution;
+                        Game.current_mode = Game.Mode.edit_solution;
                     }
                 }
                 break;
@@ -756,25 +728,25 @@ public class Main : MonoBehaviour
 
                     cursor_quad.SetActive(false);
                     start_level(current_level);
-                    current_mode = Game.Mode.make_move;
+                    Game.current_mode = Game.Mode.make_move;
                 }
                 break;
 
             case Game.Mode.prepare_to_play:
-                current_mode = Game.Mode.make_move;
+                Game.current_mode = Game.Mode.make_move;
                 break;
 
             case Game.Mode.prepare_to_show_solution:
                 if (mode_time_elapsed > 0.5f)
                 {
-                    current_mode = Game.Mode.show_solution;
+                    Game.current_mode = Game.Mode.show_solution;
                 }
                 break;
 
             case Game.Mode.show_solution:
                 if (solution_turn_enumerator < 0)
                 {
-                    current_mode = Game.Mode.prepare_to_play;
+                    Game.current_mode = Game.Mode.prepare_to_play;
                 }
                 else if (mode_time_elapsed > 0.333f)
                 {
@@ -783,7 +755,7 @@ public class Main : MonoBehaviour
                     current_move_result = current_level.get_move_result(current_move_vector, out move_distance);
                     move_start_time = Time.realtimeSinceStartup;
                     move_end_time = move_start_time + (move_distance * 0.04f);
-                    current_mode = Game.Mode.make_help_move;
+                    Game.current_mode = Game.Mode.make_help_move;
                 }
                 break;
 
@@ -802,7 +774,7 @@ public class Main : MonoBehaviour
                     current_move_result = current_level.get_move_result(current_move_vector, out move_distance);
                     move_start_time = Time.realtimeSinceStartup;
                     move_end_time = move_start_time + (move_distance * 0.05f);
-                    current_mode = Game.Mode.maybe;
+                    Game.current_mode = Game.Mode.maybe;
                 }
                 break;
 
@@ -834,19 +806,19 @@ public class Main : MonoBehaviour
 
         }
 
-        debug($"MODE: {current_mode}");
+        debug($"MODE: {Game.current_mode}");
 
         // space to reset level
         if (Input.GetKeyDown(KeyCode.Space))
         {
             start_level(current_level);
-            current_mode = Game.Mode.make_move;
+            Game.current_mode = Game.Mode.make_move;
         }
 
         // Escape to quit
         if (Input.GetKeyDown(KeyCode.Escape))
         {
-            Quit();
+            Statics.Quit();
         }
         // cube animation
         cube_angle += cube_angle_velocity;

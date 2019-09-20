@@ -7,9 +7,9 @@ using Unity.Mathematics;
 
 public class Game : MonoBehaviour
 {
-    public float square_size = 30;
-    public Shader block_shader;
+    public Material block_material;
     public Material solution_material;
+    public Material boundary_material;
     public GameObject front_face;
     public GameObject main_cube;
     public AnimationCurve block_movement_curve = AnimationCurve.Linear(0, 0, 1, 1);
@@ -55,15 +55,41 @@ public class Game : MonoBehaviour
     int move_enumerator;                        // for showing solution
 
     List<GameObject> solution_objects;
+    List<GameObject> boundary_objects;
 
     Level current_level;
-
-    Mode current_mode;
 
     float3 cube_angle;
     float3 cube_angle_velocity;
 
     float block_depth;
+
+    static Mode _current_mode;
+    public static float mode_timer;
+
+    public static float mode_time_elapsed
+    {
+        get
+        {
+            return Time.realtimeSinceStartup - mode_timer;
+        }
+    }
+
+    public static Mode current_mode
+    {
+        get => _current_mode;
+        set
+        {
+            _current_mode = value;
+            mode_timer = Time.realtimeSinceStartup;
+            Debug.Log($"MODE: {value} at {mode_timer}");
+            //string s;
+            //if (mode_banners.TryGetValue(_current_mode, out s))
+            //{
+            //    set_banner_text(s);
+            //}
+        }
+    }
 
     //////////////////////////////////////////////////////////////////////
 
@@ -73,11 +99,80 @@ public class Game : MonoBehaviour
 
     //////////////////////////////////////////////////////////////////////
 
+    public GameObject create_boundary_quad(float2 start, float2 end)
+    {
+        GameObject quad_object = new GameObject();
+        MeshFilter mesh_filter = quad_object.AddComponent<MeshFilter>();
+        Mesh mesh = new Mesh();
+        mesh.vertices = new Vector3[] {
+            new Vector3(start.x, start.y, 0),
+            new Vector3(start.x, start.y, block_depth * 2),
+            new Vector3(end.x, end.y, 0),
+            new Vector3(end.x, end.y, block_depth * 2),
+        };
+        Vector3 normal = Vector3.Cross(mesh.vertices[1] - mesh.vertices[0], mesh.vertices[2] - mesh.vertices[0]).normalized;
+        mesh.normals = new Vector3[]
+        {
+            normal,
+            normal,
+            normal,
+            normal
+        };
+        mesh.triangles = new int[]
+        {
+            0,2,1,
+            1,2,3,
+            0,1,2,
+            1,3,2
+        };
+        float dx = start.x - end.x;
+        float dy = start.y - end.y;
+        float len = Mathf.Sqrt((dx * dx) + (dy * dy));
+        mesh.uv = new Vector2[]
+        {
+            new Vector2(0,0),
+            new Vector2(0,1),
+            new Vector2(len * 8, 0),
+            new Vector2(len * 8, 1)
+        };
+        mesh_filter.mesh = mesh;
+        MeshRenderer quad_renderer = quad_object.AddComponent<MeshRenderer>();
+        quad_renderer.material = boundary_material;
+        Main.set_color(quad_object, Color.white);
+        quad_object.transform.SetParent(front_face.transform, false);
+        return quad_object;
+    }
+
+    void create_boundary()
+    {
+        float3 p = board_coordinate(int2.zero);
+        float w = p.x - block_scale.x / 1.9f;
+        float h = p.y - block_scale.y / 1.9f ;
+        float2 bl = new float2(-w, -h);
+        float2 tl = new float2(-w, h);
+        float2 br = new float2(w, -h);
+        float2 tr = new float2(w, h);
+        boundary_objects.Add(create_boundary_quad(bl, tl));
+        boundary_objects.Add(create_boundary_quad(tl, tr));
+        boundary_objects.Add(create_boundary_quad(tr, br));
+        boundary_objects.Add(create_boundary_quad(br, bl));
+    }
+
+    void destroy_boundary()
+    {
+        foreach(GameObject o in boundary_objects)
+        {
+            Destroy(o);
+        }
+        boundary_objects.Clear();
+    }
+
     public GameObject create_block_object(Color color)
     {
         GameObject quad_object = GameObject.CreatePrimitive(PrimitiveType.Cube);
-        quad_object.GetComponent<Renderer>().material.shader = block_shader;
+        quad_object.GetComponent<Renderer>().material = block_material;
         Main.set_color(quad_object, color);
+        
         quad_object.transform.localScale = block_scale;
         quad_object.transform.SetParent(front_face.transform, false);
         return quad_object;
@@ -103,6 +198,14 @@ public class Game : MonoBehaviour
             return false;
         }
         return find_win_block(target);
+    }
+
+    public void DeleteAll()
+    {
+        foreach (GameObject o in Object.FindObjectsOfType<GameObject>())
+        {
+            Destroy(o);
+        }
     }
 
     GameObject create_neighbour(int2 b, GameObject parent, int2 board_offset, float angle, Vector3 axis, Vector3 offset)
@@ -135,29 +238,22 @@ public class Game : MonoBehaviour
         top.transform.localPosition = new Vector3(0, 0, block_depth);
 
         solution_object.transform.SetParent(front_face.transform, false);
-        solution_object.transform.localPosition = board_coordinate(b, block_depth - 0);
+        solution_object.transform.localPosition = board_coordinate(b, block_depth);
         return solution_object;
     }
 
     float3 board_coordinate(int2 pos, float z)
     {
-        float x_org = -(current_level.width * block_scale.x / 2);
-        float y_org = -(current_level.height * block_scale.y / 2);
-        float x = pos.x * block_scale.x;
-        float y = pos.y * block_scale.y;
-        return new float3(x + x_org, y + y_org, z);
+        float x_org = (current_level.width * block_scale.x) / 2;
+        float y_org = (current_level.height * block_scale.y) / 2;
+        float x = pos.x * block_scale.x - x_org + block_scale.x / 2;
+        float y = pos.y * block_scale.y - y_org + block_scale.y / 2;
+        return new float3(x, y, z);
     }
 
     float3 board_coordinate(int2 pos)
     {
         return board_coordinate(pos, block_depth);
-    }
-
-    public GameObject create_block_graphic(int2 pos)
-    {
-        GameObject o = create_block_object(new Color(1, 0, 0));
-        o.transform.localPosition = board_coordinate(pos);
-        return o;
     }
 
     void load_level(string name)
@@ -174,22 +270,29 @@ public class Game : MonoBehaviour
 
     void start_level()
     {
+        destroy_boundary();
         destroy_level();
-        current_level.create_blocks(Color.yellow, Color.blue);
+        current_level.create_blocks(stuck_color, moving_color);
         foreach(int2 b in current_level.win_blocks) {
             GameObject s = create_solution_object(b);
             solution_objects.Add(s);
         }
+        create_boundary();
+    }
+
+    void destroy_solution()
+    {
+        foreach (GameObject s in solution_objects)
+        {
+            Destroy(s);
+        }
+        solution_objects.Clear();
     }
 
     void destroy_level()
     {
         current_level.reset();
-        foreach(GameObject s in solution_objects)
-        {
-            Destroy(s);
-        }
-        solution_objects.Clear();
+        destroy_solution();
     }
 
     // Start is called before the first frame update
@@ -199,12 +302,12 @@ public class Game : MonoBehaviour
         float face_width = face_size.size.x;
         float face_height = face_size.size.y;
 
-        float x_scale = face_width / (max_grid_width + 1);
-        float y_scale = face_height / (max_grid_height + 1);
+        float x_scale = face_width / max_grid_width;
+        float y_scale = face_height / max_grid_height;
         float z_scale = Mathf.Max(x_scale, y_scale);
         block_scale = new float3(x_scale, y_scale, z_scale);
         block_depth = -z_scale / 2;
-
+        boundary_objects = new List<GameObject>();
         solution_objects = new List<GameObject>();
 
         load_level(Statics.level_name);
@@ -217,6 +320,12 @@ public class Game : MonoBehaviour
     }
 
     //////////////////////////////////////////////////////////////////////
+
+    void won_level()
+    {
+        current_mode = Mode.winner;
+        destroy_solution();
+    }
 
     void do_game_move(Mode next_mode)
     {
@@ -236,7 +345,7 @@ public class Game : MonoBehaviour
 
             if (current_move_result == Level.move_result.hit_solution)
             {
-                current_mode = Mode.winner;
+                won_level();
                 final_color = win_color;
             }
             else if (current_move_result == Level.move_result.hit_side)
@@ -250,7 +359,7 @@ public class Game : MonoBehaviour
                 bool all_stuck = current_level.count_free_blocks() == 0;
                 if (all_stuck && current_level.is_solution_complete(int2.zero))
                 {
-                    current_mode = Mode.winner;
+                    won_level();
                     final_color = win_color;
                 }
             }
@@ -296,26 +405,45 @@ public class Game : MonoBehaviour
                 }
                 break;
 
-            case Mode.failed:
-                break;
-
             case Mode.maybe:
                 do_game_move(Mode.make_move);
                 break;
 
+            case Mode.failed:
+                {
+                    float t = Mathf.Sin(mode_timer) * 0.35f + 0.5f;
+                    foreach(GameObject o in boundary_objects)
+                    {
+                        Main.set_color(o, Color.red);// new Color(t, t, t, t));
+                    }
+                }
+                break;
+
             case Mode.winner:
+                {
+                    float t = mode_time_elapsed;
+                    float y = (-16 * (t * t) + t * 5) * (block_depth * 4) + block_depth;
+                    foreach(Block o in current_level.blocks)
+                    {
+                        o.game_object.transform.localPosition = board_coordinate(o.position, y);
+                    }
+                    Debug.Log($"T: {t}, Y: {y}");
+                    if (t >= 0.4f)
+                    {
+                        SceneManager.LoadScene("FrontEndScene", LoadSceneMode.Single);
+                    }
+                }
                 break;
         }
         // space to reset level
         if (Input.GetKeyDown(KeyCode.Space))
         {
-            start_level();
-            current_mode = Game.Mode.make_move;
+            restart();
         }
 
         if(Input.GetKeyDown(KeyCode.Escape))
         {
-            SceneManager.LoadScene("FrontEnd", LoadSceneMode.Single);
+            quit();
         }
 
         // cube animation
@@ -323,5 +451,33 @@ public class Game : MonoBehaviour
         main_cube.transform.rotation = Quaternion.Euler(cube_angle.x, cube_angle.y, cube_angle.z);
         cube_angle_velocity *= 0.95f;
         cube_angle *= 0.65f;
+    }
+
+    void quit()
+    {
+        DeleteAll();
+        SceneManager.LoadScene("FrontEndScene", LoadSceneMode.Single);
+    }
+
+    void restart()
+    {
+        start_level();
+        current_mode = Mode.make_move;
+    }
+
+    public void on_help_button()
+    {
+        start_level();
+        current_mode = Mode.prepare_to_show_solution;
+    }
+
+    public void on_retry_button()
+    {
+        restart();
+    }
+
+    public void on_quit_button()
+    {
+        quit();
     }
 }

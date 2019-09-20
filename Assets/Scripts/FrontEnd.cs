@@ -49,5 +49,10 @@ public class FrontEnd : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        // Escape to quit
+        if (Input.GetKeyDown(KeyCode.Escape))
+        {
+            Statics.Quit();
+        }
     }
 }
