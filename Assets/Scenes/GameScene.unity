@@ -438,11 +438,11 @@ RectTransform:
   m_Children:
   - {fileID: 1774270267}
   m_Father: {fileID: 555429406}
-  m_RootOrder: 0
+  m_RootOrder: 1
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -600, y: 420}
+  m_AnchoredPosition: {x: -600, y: 370}
   m_SizeDelta: {x: 80, y: 40}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &390888830
@@ -720,8 +720,8 @@ RectTransform:
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 0, y: 0, z: 0}
   m_Children:
-  - {fileID: 390888829}
   - {fileID: 1601434975}
+  - {fileID: 390888829}
   - {fileID: 1152462676}
   m_Father: {fileID: 0}
   m_RootOrder: 5
@@ -1104,12 +1104,12 @@ MonoBehaviour:
     m_PostInfinity: 2
     m_RotationOrder: 4
   grid_color: {r: 0.2, g: 0.3, b: 0.1, a: 1}
-  stuck_color: {r: 1, g: 0.9673006, b: 0.5896226, a: 1}
-  moving_color: {r: 0, g: 1, b: 0.9806142, a: 1}
+  stuck_color: {r: 0.754717, g: 0.6985709, b: 0.017799927, a: 1}
+  moving_color: {r: 0.05833925, g: 0.6509434, b: 0.6393238, a: 1}
   fail_color: {r: 1, g: 0, b: 0, a: 1}
-  solution_color: {r: 0.5, g: 0.5, b: 0.5, a: 1}
+  solution_color: {r: 0.38679248, g: 0.27774125, b: 0, a: 1}
   solution_flash_color: {r: 1, g: 1, b: 1, a: 1}
-  win_color: {r: 1, g: 0.98647946, b: 0, a: 1}
+  win_color: {r: 0.754717, g: 0.6985709, b: 0.017799927, a: 1}
 --- !u!4 &1027624235
 Transform:
   m_ObjectHideFlags: 0
@@ -1586,11 +1586,11 @@ RectTransform:
   m_Children:
   - {fileID: 991388177}
   m_Father: {fileID: 555429406}
-  m_RootOrder: 1
+  m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -600, y: 370}
+  m_AnchoredPosition: {x: -600, y: 420}
   m_SizeDelta: {x: 80, y: 40}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1601434976
