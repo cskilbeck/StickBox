@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using Unity.Mathematics;
 
 public class Game : MonoBehaviour
@@ -134,22 +135,22 @@ public class Game : MonoBehaviour
         top.transform.localPosition = new Vector3(0, 0, block_depth);
 
         solution_object.transform.SetParent(front_face.transform, false);
-        solution_object.transform.localPosition = board_coordinate(b);
+        solution_object.transform.localPosition = board_coordinate(b, block_depth - 0);
         return solution_object;
     }
 
     float3 board_coordinate(int2 pos, float z)
     {
-        return board_coordinate(pos);
-    }
-
-    float3 board_coordinate(int2 pos)
-    {
         float x_org = -(current_level.width * block_scale.x / 2);
         float y_org = -(current_level.height * block_scale.y / 2);
         float x = pos.x * block_scale.x;
         float y = pos.y * block_scale.y;
-        return new float3(x + x_org, y + y_org, block_depth);
+        return new float3(x + x_org, y + y_org, z);
+    }
+
+    float3 board_coordinate(int2 pos)
+    {
+        return board_coordinate(pos, block_depth);
     }
 
     public GameObject create_block_graphic(int2 pos)
@@ -162,6 +163,10 @@ public class Game : MonoBehaviour
     void load_level(string name)
     {
         current_level = File.load_level($"level_{name}.asset");
+        if(current_level == null)
+        {
+            current_level = File.load_level("level_15.asset");
+        }
         current_level.get_board_coordinate = board_coordinate;
         current_level.create_block_object = create_block_object;
         start_level();
@@ -202,7 +207,7 @@ public class Game : MonoBehaviour
 
         solution_objects = new List<GameObject>();
 
-        load_level("10");
+        load_level(Statics.level_name);
         current_mode = Mode.make_move;
     }
 
@@ -256,6 +261,7 @@ public class Game : MonoBehaviour
                     Main.set_color(b.game_object, final_color);
                 }
             }
+            // on_move_complete();
             cube_angle_velocity = new float3(current_move_vector.y, -current_move_vector.x, 0) * 2;
         }
         else
@@ -264,10 +270,10 @@ public class Game : MonoBehaviour
             {
                 if (b.stuck)
                 {
-                    float3 org = current_level.board_coordinate(b.position);
                     float t = block_movement_curve.Evaluate(normalized_time);
+                    float3 org = board_coordinate(b.position);
                     float3 d = block_scale * move_distance * t;
-                    float3 m = new float3(current_move_vector.x, current_move_vector.y, 0);
+                    float3 m = new float3(current_move_vector, 0);
                     b.game_object.transform.localPosition = org + m * d;
                 }
             }
@@ -299,8 +305,6 @@ public class Game : MonoBehaviour
 
             case Mode.winner:
                 break;
-
-
         }
         // space to reset level
         if (Input.GetKeyDown(KeyCode.Space))
@@ -308,6 +312,12 @@ public class Game : MonoBehaviour
             start_level();
             current_mode = Game.Mode.make_move;
         }
+
+        if(Input.GetKeyDown(KeyCode.Escape))
+        {
+            SceneManager.LoadScene("FrontEnd", LoadSceneMode.Single);
+        }
+
         // cube animation
         cube_angle += cube_angle_velocity;
         main_cube.transform.rotation = Quaternion.Euler(cube_angle.x, cube_angle.y, cube_angle.z);
