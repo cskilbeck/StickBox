@@ -53,6 +53,7 @@ public class Game : MonoBehaviour
     Level.move_result current_move_result;      // did it stick to a block or the side
     int move_distance;                          // how far it can move before hitting a block or the side
     int move_enumerator;                        // for showing solution
+    int solution_turn_enumerator;   // for showing solution
 
     List<GameObject> solution_objects;
     List<GameObject> boundary_objects;
@@ -434,6 +435,32 @@ public class Game : MonoBehaviour
                     }
                 }
                 break;
+            case Mode.prepare_to_show_solution:
+                if (mode_time_elapsed > 0.5f)
+                {
+                    current_mode = Mode.show_solution;
+                }
+                break;
+
+            case Mode.show_solution:
+                if (solution_turn_enumerator < 0)
+                {
+                    SceneManager.LoadScene("FrontEndScene", LoadSceneMode.Single);
+                }
+                else if (mode_time_elapsed > 0.333f)
+                {
+                    current_move_vector = current_level.solution[solution_turn_enumerator] * -1;
+                    solution_turn_enumerator -= 1;
+                    current_move_result = current_level.get_move_result(current_move_vector, out move_distance);
+                    move_start_time = Time.realtimeSinceStartup;
+                    move_end_time = move_start_time + (move_distance * 0.04f);
+                    current_mode = Mode.make_help_move;
+                }
+                break;
+
+            case Mode.make_help_move:
+                do_game_move(Mode.show_solution);
+                break;
         }
         // space to reset level
         if (Input.GetKeyDown(KeyCode.Space))
@@ -469,6 +496,7 @@ public class Game : MonoBehaviour
     {
         start_level();
         current_mode = Mode.prepare_to_show_solution;
+        solution_turn_enumerator = current_level.solution.Count - 1;
     }
 
     public void on_retry_button()
