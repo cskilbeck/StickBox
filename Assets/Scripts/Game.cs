@@ -435,6 +435,7 @@ public class Game : MonoBehaviour
                     }
                 }
                 break;
+
             case Mode.prepare_to_show_solution:
                 if (mode_time_elapsed > 0.5f)
                 {
@@ -443,11 +444,7 @@ public class Game : MonoBehaviour
                 break;
 
             case Mode.show_solution:
-                if (solution_turn_enumerator < 0)
-                {
-                    SceneManager.LoadScene("FrontEndScene", LoadSceneMode.Single);
-                }
-                else if (mode_time_elapsed > 0.333f)
+                if (mode_time_elapsed > 0.333f)
                 {
                     current_move_vector = current_level.solution[solution_turn_enumerator] * -1;
                     solution_turn_enumerator -= 1;
