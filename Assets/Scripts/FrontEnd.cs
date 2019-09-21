@@ -40,7 +40,7 @@ public class FrontEnd : MonoBehaviour
         b.transform.SetParent(button_panel.transform);
         b.transform.localPosition = new float3(x, y, 0);
         b.GetComponent<Image>().color = button_color;
-        b.transform.GetChild(0).GetComponent<Text>().text = $"{index + 1,2:00}";
+        b.transform.GetChild(0).GetComponent<Text>().text = $"{index + 1,2}";
         b.transform.GetChild(0).GetComponent<Text>().color = text_color;
         b.gameObject.SetActive(true);
     }
