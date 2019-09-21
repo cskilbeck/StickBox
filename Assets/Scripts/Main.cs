@@ -394,10 +394,9 @@ public class Main : MonoBehaviour
 
     //////////////////////////////////////////////////////////////////////
 
-    void play_level(string name)
+    void play_level(int index)
     {
-        string asset_name = $"level_{name}.asset";
-        Level temp = File.load_level(asset_name);
+        Level temp = File.load_level(index);
         if (temp != null)
         {
             reset_level(current_level);
@@ -459,7 +458,11 @@ public class Main : MonoBehaviour
 
     public void on_load_level_click()
     {
-        play_level(level_name_input_field.text);
+        int x;
+        if(int.TryParse(level_name_input_field.text, out x))
+        {
+            play_level(x);
+        }
     }
 
     public void on_save_level_click()

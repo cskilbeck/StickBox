@@ -54,6 +54,7 @@ public class Game : MonoBehaviour
     int move_distance;                          // how far it can move before hitting a block or the side
     int move_enumerator;                        // for showing solution
     int solution_turn_enumerator;   // for showing solution
+    bool cheating;
 
     List<GameObject> solution_objects;
     List<GameObject> boundary_objects;
@@ -257,16 +258,15 @@ public class Game : MonoBehaviour
         return board_coordinate(pos, block_depth);
     }
 
-    void load_level(string name)
+    void load_level(int index)
     {
-        current_level = File.load_level($"level_{name}.asset");
-        if(current_level == null)
+        current_level = File.load_level(index);
+        if (current_level != null)
         {
-            current_level = File.load_level("level_15.asset");
+            current_level.get_board_coordinate = board_coordinate;
+            current_level.create_block_object = create_block_object;
+            start_level();
         }
-        current_level.get_board_coordinate = board_coordinate;
-        current_level.create_block_object = create_block_object;
-        start_level();
     }
 
     void start_level()
@@ -311,7 +311,7 @@ public class Game : MonoBehaviour
         boundary_objects = new List<GameObject>();
         solution_objects = new List<GameObject>();
 
-        load_level(Statics.level_name);
+        load_level(Statics.level_index);
         current_mode = Mode.make_move;
     }
 
@@ -324,6 +324,12 @@ public class Game : MonoBehaviour
 
     void won_level()
     {
+        if(!cheating)
+        {
+            Statics.level_complete[Statics.level_index] = true;
+            Statics.SaveState();
+        }
+
         current_mode = Mode.winner;
         destroy_solution();
     }
@@ -428,7 +434,6 @@ public class Game : MonoBehaviour
                     {
                         o.game_object.transform.localPosition = board_coordinate(o.position, y);
                     }
-                    Debug.Log($"T: {t}, Y: {y}");
                     if (t >= 0.4f)
                     {
                         SceneManager.LoadScene("FrontEndScene", LoadSceneMode.Single);
@@ -485,12 +490,16 @@ public class Game : MonoBehaviour
 
     void restart()
     {
+        cheating = false;
         start_level();
         current_mode = Mode.make_move;
     }
 
     public void on_help_button()
     {
+        Statics.level_cheat[Statics.level_index] = true;
+        Statics.SaveState();
+        cheating = true;
         start_level();
         current_mode = Mode.prepare_to_show_solution;
         solution_turn_enumerator = current_level.solution.Count - 1;

@@ -5,10 +5,11 @@ using UnityEditor;
 
 public class File : MonoBehaviour
 {
-    public static Level load_level(string name)
+    public static Level load_level(int index)
     {
+        string name = $"level_{index,2:00}";
 #if UNITY_EDITOR
-        Level loaded = AssetDatabase.LoadAssetAtPath<Level>($"Assets/Resources/{name}");
+        Level loaded = AssetDatabase.LoadAssetAtPath<Level>($"Assets/Resources/{name}.asset");
         return loaded;
 #else
         return Resources.Load<Level>(name);
