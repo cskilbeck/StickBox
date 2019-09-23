@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using Unity.Mathematics;
+using UnityEngine.UI;
 
 public class Game : MonoBehaviour
 {
@@ -12,7 +13,9 @@ public class Game : MonoBehaviour
     public Material boundary_material;
     public GameObject front_face;
     public GameObject main_cube;
+    public GameObject banner_text;
     public AnimationCurve block_movement_curve = AnimationCurve.Linear(0, 0, 1, 1);
+    public AnimationCurve banner_text_movement_curve = AnimationCurve.EaseInOut(0, 0, 1, 1);
 
     public Color grid_color = new Color(0.2f, 0.3f, 0.1f, 1);
     public Color stuck_color = Color.yellow;
@@ -39,6 +42,7 @@ public class Game : MonoBehaviour
         prepare_to_show_solution,   // banner for show solution
         show_solution,              // just show me the solution
         make_help_move,             // making a move during show_solution
+        solution_ended,
 
         prepare_to_play,            // banner for play
         set_grid_size,              // editing, selecting grid size
@@ -65,33 +69,6 @@ public class Game : MonoBehaviour
     float3 cube_angle_velocity;
 
     float block_depth;
-
-    static Mode _current_mode;
-    public static float mode_timer;
-
-    public static float mode_time_elapsed
-    {
-        get
-        {
-            return Time.realtimeSinceStartup - mode_timer;
-        }
-    }
-
-    public static Mode current_mode
-    {
-        get => _current_mode;
-        set
-        {
-            _current_mode = value;
-            mode_timer = Time.realtimeSinceStartup;
-            Debug.Log($"MODE: {value} at {mode_timer}");
-            //string s;
-            //if (mode_banners.TryGetValue(_current_mode, out s))
-            //{
-            //    set_banner_text(s);
-            //}
-        }
-    }
 
     //////////////////////////////////////////////////////////////////////
 
@@ -265,6 +242,8 @@ public class Game : MonoBehaviour
         {
             current_level.get_board_coordinate = board_coordinate;
             current_level.create_block_object = create_block_object;
+            current_level.banner_text = banner_text;
+            current_level.banner_text_movement_curve = banner_text_movement_curve;
             start_level();
         }
     }
@@ -312,7 +291,7 @@ public class Game : MonoBehaviour
         solution_objects = new List<GameObject>();
 
         load_level(Statics.level_index);
-        current_mode = Mode.make_move;
+        current_level.current_mode = Mode.prepare_to_play;
     }
 
     float3 lerp(float3 a, float3 b, float t)
@@ -330,11 +309,10 @@ public class Game : MonoBehaviour
             Statics.SaveState();
         }
 
-        current_mode = Mode.winner;
         destroy_solution();
     }
 
-    void do_game_move(Mode next_mode)
+    void do_game_move(Mode next_mode, Mode win_mode)
     {
         float time_span = move_end_time - move_start_time;
         float delta_time = Time.realtimeSinceStartup - move_start_time;
@@ -348,17 +326,18 @@ public class Game : MonoBehaviour
             current_level.update_block_graphics();
             current_level.update_hit_blocks(current_move_vector);
             Color final_color = stuck_color;
-            current_mode = next_mode;
+            current_level.current_mode = next_mode;
 
             if (current_move_result == Level.move_result.hit_solution)
             {
                 won_level();
+                current_level.current_mode = win_mode;
                 final_color = win_color;
             }
             else if (current_move_result == Level.move_result.hit_side)
             {
                 final_color = fail_color;
-                current_mode = Mode.failed;
+                current_level.current_mode = Mode.failed;
             }
             else
             {
@@ -367,6 +346,7 @@ public class Game : MonoBehaviour
                 if (all_stuck && current_level.is_solution_complete(int2.zero))
                 {
                     won_level();
+                    current_level.current_mode = win_mode;
                     final_color = win_color;
                 }
             }
@@ -395,11 +375,27 @@ public class Game : MonoBehaviour
             }
         }
     }
-    
+
+    void animate_win()
+    {
+        float t = current_level.mode_time_elapsed;
+        float y = (-16 * (t * t) + t * 5) * (block_depth * 4) + block_depth;
+        foreach (Block o in current_level.blocks)
+        {
+            o.game_object.transform.localPosition = board_coordinate(o.position, y);
+        }
+        if (t >= 1.5f)
+        {
+            SceneManager.LoadScene("FrontEndScene", LoadSceneMode.Single);
+        }
+    }
+
     // Update is called once per frame
     void Update()
     {
-        switch(current_mode)
+        current_level.update_banner_pos();
+
+        switch (current_level.current_mode)
         {
             case Mode.make_move:
                 current_move_vector = KeyboardInput.get_key_movement();
@@ -408,17 +404,21 @@ public class Game : MonoBehaviour
                     current_move_result = current_level.get_move_result(current_move_vector, out move_distance);
                     move_start_time = Time.realtimeSinceStartup;
                     move_end_time = move_start_time + (move_distance * 0.05f);
-                    current_mode = Mode.maybe;
+                    current_level.current_mode = Mode.maybe;
                 }
                 break;
 
+            case Mode.prepare_to_play:
+                current_level.current_mode = Mode.make_move;
+                break;
+
             case Mode.maybe:
-                do_game_move(Mode.make_move);
+                do_game_move(Mode.make_move, Mode.winner);
                 break;
 
             case Mode.failed:
                 {
-                    float t = Mathf.Sin(mode_timer) * 0.35f + 0.5f;
+                    float t = Mathf.Sin(current_level.mode_timer) * 0.35f + 0.5f;
                     foreach(GameObject o in boundary_objects)
                     {
                         Main.set_color(o, Color.red);// new Color(t, t, t, t));
@@ -426,42 +426,35 @@ public class Game : MonoBehaviour
                 }
                 break;
 
+            case Mode.solution_ended:
+                animate_win();
+                break;
+
             case Mode.winner:
-                {
-                    float t = mode_time_elapsed;
-                    float y = (-16 * (t * t) + t * 5) * (block_depth * 4) + block_depth;
-                    foreach(Block o in current_level.blocks)
-                    {
-                        o.game_object.transform.localPosition = board_coordinate(o.position, y);
-                    }
-                    if (t >= 0.4f)
-                    {
-                        SceneManager.LoadScene("FrontEndScene", LoadSceneMode.Single);
-                    }
-                }
+                animate_win();
                 break;
 
             case Mode.prepare_to_show_solution:
-                if (mode_time_elapsed > 0.5f)
+                if (current_level.mode_time_elapsed > 1)
                 {
-                    current_mode = Mode.show_solution;
+                    current_level.current_mode = Mode.show_solution;
                 }
                 break;
 
             case Mode.show_solution:
-                if (mode_time_elapsed > 0.333f)
+                if (current_level.mode_time_elapsed > 0.333f)
                 {
                     current_move_vector = current_level.solution[solution_turn_enumerator] * -1;
                     solution_turn_enumerator -= 1;
                     current_move_result = current_level.get_move_result(current_move_vector, out move_distance);
                     move_start_time = Time.realtimeSinceStartup;
                     move_end_time = move_start_time + (move_distance * 0.04f);
-                    current_mode = Mode.make_help_move;
+                    current_level.current_mode = Mode.make_help_move;
                 }
                 break;
 
             case Mode.make_help_move:
-                do_game_move(Mode.show_solution);
+                do_game_move(Mode.show_solution, Mode.solution_ended);
                 break;
         }
         // space to reset level
@@ -492,7 +485,7 @@ public class Game : MonoBehaviour
     {
         cheating = false;
         start_level();
-        current_mode = Mode.make_move;
+        current_level.current_mode = Mode.prepare_to_play;
     }
 
     public void on_help_button()
@@ -501,7 +494,7 @@ public class Game : MonoBehaviour
         Statics.SaveState();
         cheating = true;
         start_level();
-        current_mode = Mode.prepare_to_show_solution;
+        current_level.current_mode = Mode.prepare_to_show_solution;
         solution_turn_enumerator = current_level.solution.Count - 1;
     }
 

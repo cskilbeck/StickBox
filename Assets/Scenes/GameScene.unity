@@ -1127,6 +1127,7 @@ MonoBehaviour:
   boundary_material: {fileID: 2100000, guid: 2a5f70cdf47b8e347bdb724a4d4cb3dd, type: 2}
   front_face: {fileID: 45622793}
   main_cube: {fileID: 2108196608}
+  banner_text: {fileID: 46114353}
   block_movement_curve:
     serializedVersion: 2
     m_Curve:
@@ -1147,6 +1148,75 @@ MonoBehaviour:
       tangentMode: 0
       weightedMode: 0
       inWeight: 0.044237494
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  banner_text_movement_curve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 3.8234417
+      outSlope: 3.8234417
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0.08470818
+    - serializedVersion: 3
+      time: 0.30234596
+      value: 0.4994649
+      inSlope: 0.010149102
+      outSlope: 0.010149102
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.3535947
+    - serializedVersion: 3
+      time: 0.4041286
+      value: 0.49924964
+      inSlope: 0.0084962845
+      outSlope: 0.0084962845
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.80217946
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 0.45697445
+      value: 0.4512666
+      inSlope: -0.3708392
+      outSlope: -0.3708392
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.34069476
+    - serializedVersion: 3
+      time: 0.5644688
+      value: 0.6160848
+      inSlope: 4.3474574
+      outSlope: 4.3474574
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.035072256
+    - serializedVersion: 3
+      time: 0.7776056
+      value: 0.9994646
+      inSlope: 0.009189849
+      outSlope: 0.009189849
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.17388561
+      outWeight: 0.26192236
+    - serializedVersion: 3
+      time: 1
+      value: 1
+      inSlope: 0.030711606
+      outSlope: 0.030711606
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.43447116
       outWeight: 0
     m_PreInfinity: 2
     m_PostInfinity: 2

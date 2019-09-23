@@ -81,28 +81,7 @@ public class Main : MonoBehaviour
 
     Block hover_block;
 
-    float mode_time_elapsed
-    {
-        get
-        {
-            return Time.realtimeSinceStartup - Game.mode_timer;
-        }
-    }
-
-    Dictionary<Game.Mode, string> mode_banners = new Dictionary<Game.Mode, string>()
-    {
-        { Game.Mode.failed, "Failed!" },
-        { Game.Mode.prepare_to_play, "Play!" },
-        { Game.Mode.edit_solution, "Edit the level" },
-        { Game.Mode.create_solution, "Place your blocks" },
-        { Game.Mode.winner, "Winner!" },
-        { Game.Mode.set_grid_size, "Set the size" },
-        { Game.Mode.prepare_to_show_solution, "Solution!" }
-    };
-
     StringBuilder debug_text_builder = new StringBuilder();
-
-    float banner_text_move_start_time;
 
     //////////////////////////////////////////////////////////////////////
     // UTILS
@@ -146,29 +125,6 @@ public class Main : MonoBehaviour
     {
         debug_text.text = debug_text_builder.ToString();
         debug_text_builder.Clear();
-    }
-
-    void update_banner_pos()
-    {
-        float t = (Time.realtimeSinceStartup - banner_text_move_start_time) * 1.5f;
-        if (t > 3)
-        {
-            banner_text.SetActive(false);
-        }
-        else
-        {
-            float x = banner_text_movement_curve.Evaluate(t * 0.333f) * 4 - 2;
-            float3 p = banner_text.transform.position;
-            banner_text.transform.position = new float3(x, p.y, p.z);
-            banner_text.SetActive(true);
-        }
-    }
-
-    void set_banner_text(string text)
-    {
-        banner_text_move_start_time = Time.realtimeSinceStartup;
-        banner_text.GetComponent<Text>().text = text;
-        banner_text.SetActive(false);
     }
 
     //////////////////////////////////////////////////////////////////////
@@ -389,7 +345,7 @@ public class Main : MonoBehaviour
             block.transform.position = new float3(p.x, p.y, solution_depth);
             solution_objects.Add(block);
         }
-        Game.current_mode = Game.Mode.prepare_to_play;
+        current_level.current_mode = Game.Mode.prepare_to_play;
     }
 
     //////////////////////////////////////////////////////////////////////
@@ -403,11 +359,13 @@ public class Main : MonoBehaviour
             current_level = temp;
             current_level.get_board_coordinate = editor_board_coordinate;
             current_level.create_block_object = create_block_object;
+            current_level.banner_text = banner_text;
+            current_level.banner_text_movement_curve = banner_text_movement_curve;
             start_level(current_level);
         }
         else
         {
-            set_banner_text($"{name} not found!");
+            current_level.set_banner_text($"{name} not found!");
         }
     }
 
@@ -429,12 +387,12 @@ public class Main : MonoBehaviour
     {
         if (current_level.solution == null)
         {
-            set_banner_text("Nope!");
+            current_level.set_banner_text("Nope!");
         }
         else
         {
             start_level(current_level);
-            Game.current_mode = Game.Mode.prepare_to_show_solution;
+            current_level.current_mode = Game.Mode.prepare_to_show_solution;
             solution_turn_enumerator = current_level.solution.Count - 1;
         }
     }
@@ -442,7 +400,7 @@ public class Main : MonoBehaviour
     public void on_reset_level_click()
     {
         start_level(current_level);
-        Game.current_mode = Game.Mode.make_move;
+        current_level.current_mode = Game.Mode.make_move;
     }
 
     public void on_new_level_click()
@@ -453,7 +411,7 @@ public class Main : MonoBehaviour
         current_level.create_block_object = create_block_object;
         current_level.reset();
         current_level.create_board(16, 16);
-        Game.current_mode = Game.Mode.set_grid_size;
+        current_level.current_mode = Game.Mode.set_grid_size;
     }
 
     public void on_load_level_click()
@@ -487,7 +445,7 @@ public class Main : MonoBehaviour
         current_level = ScriptableObject.CreateInstance<Level>();
         current_level.get_board_coordinate = editor_board_coordinate;
         current_level.create_block_object = create_block_object;
-        Game.current_mode = Game.Mode.set_grid_size;
+        current_level.current_mode = Game.Mode.set_grid_size;
     }
 
     //////////////////////////////////////////////////////////////////////
@@ -543,17 +501,17 @@ public class Main : MonoBehaviour
             current_level.update_block_graphics();
             current_level.update_hit_blocks(current_move_vector);
             Color final_color = stuck_color;
-            Game.current_mode = next_mode;
+            current_level.current_mode = next_mode;
 
             if (current_move_result == Level.move_result.hit_solution)
             {
-                Game.current_mode = Game.Mode.winner;
+                current_level.current_mode = Game.Mode.winner;
                 final_color = win_color;
             }
             else if (current_move_result == Level.move_result.hit_side)
             {
                 final_color = fail_color;
-                Game.current_mode = Game.Mode.failed;
+                current_level.current_mode = Game.Mode.failed;
             }
             else
             {
@@ -561,7 +519,7 @@ public class Main : MonoBehaviour
                 bool all_stuck = current_level.count_free_blocks() == 0;
                 if (all_stuck && current_level.is_solution_complete(int2.zero))
                 {
-                    Game.current_mode = Game.Mode.winner;
+                    current_level.current_mode = Game.Mode.winner;
                     final_color = win_color;
                 }
             }
@@ -595,7 +553,7 @@ public class Main : MonoBehaviour
 
     void Update()
     {
-        switch (Game.current_mode)
+        switch (current_level.current_mode)
         {
             // drag mouse to set size of grid
             case Game.Mode.set_grid_size:
@@ -613,7 +571,7 @@ public class Main : MonoBehaviour
                     current_level.reset();
                     reset_level(current_level);
                     current_level.create_board(bw, bh);
-                    Game.current_mode = Game.Mode.create_solution;
+                    current_level.current_mode = Game.Mode.create_solution;
                     Debug.Log($"Board is {bw}x{bh}");
                 }
                 create_grid(bw, bh, square_size, grid_color, grid_line_width);
@@ -688,7 +646,7 @@ public class Main : MonoBehaviour
                                 }
                             }
                         }
-                        Game.current_mode = Game.Mode.edit_solution;
+                        current_level.current_mode = Game.Mode.edit_solution;
                     }
                 }
                 break;
@@ -721,7 +679,7 @@ public class Main : MonoBehaviour
                 }
                 if (Input.GetKeyDown(KeyCode.P))
                 {
-                    set_banner_text("Play!");
+                    current_level.set_banner_text("Play!");
 
                     // create loaded_level from current_level
                     foreach (Block b in current_level.blocks)
@@ -731,34 +689,34 @@ public class Main : MonoBehaviour
 
                     cursor_quad.SetActive(false);
                     start_level(current_level);
-                    Game.current_mode = Game.Mode.make_move;
+                    current_level.current_mode = Game.Mode.make_move;
                 }
                 break;
 
             case Game.Mode.prepare_to_play:
-                Game.current_mode = Game.Mode.make_move;
+                current_level.current_mode = Game.Mode.make_move;
                 break;
 
             case Game.Mode.prepare_to_show_solution:
-                if (mode_time_elapsed > 0.5f)
+                if (current_level.mode_time_elapsed > 0.5f)
                 {
-                    Game.current_mode = Game.Mode.show_solution;
+                    current_level.current_mode = Game.Mode.show_solution;
                 }
                 break;
 
             case Game.Mode.show_solution:
                 if (solution_turn_enumerator < 0)
                 {
-                    Game.current_mode = Game.Mode.prepare_to_play;
+                    current_level.current_mode = Game.Mode.prepare_to_play;
                 }
-                else if (mode_time_elapsed > 0.333f)
+                else if (current_level.mode_time_elapsed > 0.333f)
                 {
                     current_move_vector = current_level.solution[solution_turn_enumerator] * -1;
                     solution_turn_enumerator -= 1;
                     current_move_result = current_level.get_move_result(current_move_vector, out move_distance);
                     move_start_time = Time.realtimeSinceStartup;
                     move_end_time = move_start_time + (move_distance * 0.04f);
-                    Game.current_mode = Game.Mode.make_help_move;
+                    current_level.current_mode = Game.Mode.make_help_move;
                 }
                 break;
 
@@ -777,7 +735,7 @@ public class Main : MonoBehaviour
                     current_move_result = current_level.get_move_result(current_move_vector, out move_distance);
                     move_start_time = Time.realtimeSinceStartup;
                     move_end_time = move_start_time + (move_distance * 0.05f);
-                    Game.current_mode = Game.Mode.maybe;
+                    current_level.current_mode = Game.Mode.maybe;
                 }
                 break;
 
@@ -809,13 +767,13 @@ public class Main : MonoBehaviour
 
         }
 
-        debug($"MODE: {Game.current_mode}");
+        debug($"MODE: {current_level.current_mode}");
 
         // space to reset level
         if (Input.GetKeyDown(KeyCode.Space))
         {
             start_level(current_level);
-            Game.current_mode = Game.Mode.make_move;
+            current_level.current_mode = Game.Mode.make_move;
         }
 
         // Escape to quit
@@ -829,7 +787,7 @@ public class Main : MonoBehaviour
         cube_angle_velocity *= 0.95f;
         cube_angle *= 0.65f;
 
-        update_banner_pos();
+        current_level.update_banner_pos();
 
         debug_end_scene();
     }

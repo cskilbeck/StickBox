@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using Unity.Mathematics;
+using UnityEngine.UI;
 
 // these are mostly obvious or spurious
 #pragma warning disable CS0162 // Unreachable code detected
@@ -21,6 +22,94 @@ public class Level : ScriptableObject
     public List<Block> start_blocks = new List<Block>();                // where they are at the beginning
     public List<int2> win_blocks = new List<int2>();                  // the solution
     public List<int2> solution = new List<int2>();                    // play these keys to solve it (only from the beginning)
+
+    public GameObject banner_text;
+    public AnimationCurve banner_text_movement_curve = AnimationCurve.EaseInOut(0, 0, 1, 1);
+
+    public delegate float3 get_board_coordinate_delegate(int2 p);
+    public delegate GameObject create_block_object_delegate(Color c);
+
+    public create_block_object_delegate create_block_object;
+    public get_board_coordinate_delegate get_board_coordinate;
+
+    float banner_text_move_start_time;
+
+    //////////////////////////////////////////////////////////////////////
+
+    public static readonly Dictionary<Game.Mode, string> mode_banners = new Dictionary<Game.Mode, string>()
+    {
+        { Game.Mode.failed, "Failed!" },
+        { Game.Mode.prepare_to_play, "Play!" },
+        { Game.Mode.edit_solution, "Edit the level" },
+        { Game.Mode.create_solution, "Place your blocks" },
+        { Game.Mode.winner, "Winner!" },
+        { Game.Mode.solution_ended, "That's it!" },
+        { Game.Mode.set_grid_size, "Set the size" },
+        { Game.Mode.prepare_to_show_solution, "Solution!" }
+    };
+
+    Game.Mode _current_mode;
+
+    public float mode_timer;
+
+    public float mode_time_elapsed
+    {
+        get
+        {
+            return Time.realtimeSinceStartup - mode_timer;
+        }
+    }
+
+    public Game.Mode current_mode
+    {
+        get => _current_mode;
+        set
+        {
+            _current_mode = value;
+            mode_timer = Time.realtimeSinceStartup;
+            Debug.Log($"MODE: {value} at {mode_timer}");
+            string s;
+            if (Level.mode_banners.TryGetValue(_current_mode, out s))
+            {
+                set_banner_text(s);
+            }
+        }
+    }
+
+    //////////////////////////////////////////////////////////////////////
+
+    public void update_banner_pos()
+    {
+        if (banner_text == null)
+        {
+            return;
+        }
+        float t = (Time.realtimeSinceStartup - banner_text_move_start_time) * 1.5f;
+        if (t > 3)
+        {
+            banner_text.SetActive(false);
+        }
+        else
+        {
+            float x = banner_text_movement_curve.Evaluate(t * 0.333f) * 4 - 2;
+            float3 p = banner_text.transform.position;
+            banner_text.transform.position = new float3(x, p.y, p.z);
+            banner_text.SetActive(true);
+        }
+    }
+
+    //////////////////////////////////////////////////////////////////////
+
+    public void set_banner_text(string text)
+    {
+        if (banner_text == null)
+        {
+            return;
+        }
+        banner_text_move_start_time = Time.realtimeSinceStartup;
+        banner_text.GetComponent<Text>().text = text;
+        banner_text.SetActive(true);
+    }
 
     //////////////////////////////////////////////////////////////////////
 
@@ -419,10 +508,6 @@ public class Level : ScriptableObject
     //////////////////////////////////////////////////////////////////////
     // BOARD COORDINATES
 
-    public delegate float3 get_board_coordinate_delegate(int2 p);
-
-    public get_board_coordinate_delegate get_board_coordinate;
-
     public float3 board_coordinate(int2 p)
     {
         return get_board_coordinate(p);
@@ -430,10 +515,6 @@ public class Level : ScriptableObject
 
     //////////////////////////////////////////////////////////////////////
     // BLOCK/BOARD CREATION
-
-    public delegate GameObject create_block_object_delegate(Color c);
-
-    public create_block_object_delegate create_block_object;
 
     public Block create_block(int2 position, Block.Flags flags, Color c)
     {
