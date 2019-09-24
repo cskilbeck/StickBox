@@ -51,12 +51,21 @@ public class Level : ScriptableObject
     Game.Mode _current_mode;
 
     public float mode_timer;
+    public float game_start_time;
 
     public float mode_time_elapsed
     {
         get
         {
             return Time.realtimeSinceStartup - mode_timer;
+        }
+    }
+
+    public float game_time_elapsed
+    {
+        get
+        {
+            return Time.realtimeSinceStartup - game_start_time;
         }
     }
 

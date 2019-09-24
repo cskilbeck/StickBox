@@ -126,7 +126,7 @@ public class Game : MonoBehaviour
     {
         float3 p = board_coordinate(int2.zero);
         float w = p.x - block_scale.x / 1.9f;
-        float h = p.y - block_scale.y / 1.9f ;
+        float h = p.y - block_scale.y / 1.9f;
         float2 bl = new float2(-w, -h);
         float2 tl = new float2(-w, h);
         float2 br = new float2(w, -h);
@@ -139,7 +139,7 @@ public class Game : MonoBehaviour
 
     void destroy_boundary()
     {
-        foreach(GameObject o in boundary_objects)
+        foreach (GameObject o in boundary_objects)
         {
             Destroy(o);
         }
@@ -151,7 +151,7 @@ public class Game : MonoBehaviour
         GameObject quad_object = GameObject.CreatePrimitive(PrimitiveType.Cube);
         quad_object.GetComponent<Renderer>().material = block_material;
         Main.set_color(quad_object, color);
-        
+
         quad_object.transform.localScale = block_scale;
         quad_object.transform.SetParent(front_face.transform, false);
         return quad_object;
@@ -159,9 +159,9 @@ public class Game : MonoBehaviour
 
     bool find_win_block(int2 b)
     {
-        foreach(int2 p in current_level.win_blocks)
+        foreach (int2 p in current_level.win_blocks)
         {
-            if(p.Equals(b))
+            if (p.Equals(b))
             {
                 return true;
             }
@@ -172,7 +172,7 @@ public class Game : MonoBehaviour
     bool neighbour(int2 b, int2 offset)
     {
         int2 target = b + offset;
-        if(target.x < 0 || target.y < 0 || target.x >= current_level.width || target.y >= current_level.height)
+        if (target.x < 0 || target.y < 0 || target.x >= current_level.width || target.y >= current_level.height)
         {
             return false;
         }
@@ -253,11 +253,13 @@ public class Game : MonoBehaviour
         destroy_boundary();
         destroy_level();
         current_level.create_blocks(stuck_color, moving_color);
-        foreach(int2 b in current_level.win_blocks) {
+        foreach (int2 b in current_level.win_blocks)
+        {
             GameObject s = create_solution_object(b);
             solution_objects.Add(s);
         }
         create_boundary();
+        current_level.game_start_time = Time.realtimeSinceStartup;
     }
 
     void destroy_solution()
@@ -303,7 +305,7 @@ public class Game : MonoBehaviour
 
     void won_level()
     {
-        if(!cheating)
+        if (!cheating)
         {
             Statics.level_complete[Statics.level_index] = true;
             Statics.SaveState();
@@ -390,6 +392,23 @@ public class Game : MonoBehaviour
         }
     }
 
+    void flash_solution()
+    {
+        if (current_level.game_time_elapsed < 0.5f)
+        {
+            float a = Mathf.Sin(current_level.game_time_elapsed * 50) * 0.05f + 0.1f;
+            Color c = new Color(1, 1, 0, a);
+            Debug.Log($"A:{a}");
+            foreach (GameObject o in solution_objects)
+            {
+                foreach (Renderer t in o.GetComponentsInChildren<Renderer>())
+                {
+                    t.material.SetColor("_Color", c);
+                }
+            }
+        }
+    }
+
     // Update is called once per frame
     void Update()
     {
@@ -398,6 +417,7 @@ public class Game : MonoBehaviour
         switch (current_level.current_mode)
         {
             case Mode.make_move:
+                flash_solution();
                 current_move_vector = KeyboardInput.get_key_movement();
                 if (!current_move_vector.Equals(int2.zero))
                 {
@@ -413,13 +433,14 @@ public class Game : MonoBehaviour
                 break;
 
             case Mode.maybe:
+                flash_solution();
                 do_game_move(Mode.make_move, Mode.winner);
                 break;
 
             case Mode.failed:
                 {
                     float t = Mathf.Sin(current_level.mode_timer) * 0.35f + 0.5f;
-                    foreach(GameObject o in boundary_objects)
+                    foreach (GameObject o in boundary_objects)
                     {
                         Main.set_color(o, Color.red);// new Color(t, t, t, t));
                     }
@@ -463,7 +484,7 @@ public class Game : MonoBehaviour
             restart();
         }
 
-        if(Input.GetKeyDown(KeyCode.Escape))
+        if (Input.GetKeyDown(KeyCode.Escape))
         {
             quit();
         }
