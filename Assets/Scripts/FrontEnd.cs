@@ -25,21 +25,15 @@ public class FrontEnd : MonoBehaviour
 
     void create_button(float x, float y, int index)
     {
-        Button b = Instantiate(button_prefab);
-
         // if last 10 levels complete and we're on a multiple of 10, enable the next 10 levels
-        int ten_last_mask = (1 << 10) - 1;
-        if ((index % 10) == 0 && (completion_mask & ten_last_mask) == ten_last_mask)
+        int last_ten_mask = (1 << 10) - 1;
+        if ((index % 10) == 0 && (completion_mask & last_ten_mask) == last_ten_mask)
         {
             max_level_enabled = index + 10;
         }
 
         // low 10 bits of completion_mask are last 10 levels completed status
-        completion_mask <<= 1;
-        if (Statics.level_complete[index])
-        {
-            completion_mask |= 1;
-        }
+        completion_mask = (completion_mask << 1) | (Statics.level_complete[index] ? 1 : 0);
 
 #if UNITY_EDITOR
         if (play_any_level)
@@ -48,34 +42,37 @@ public class FrontEnd : MonoBehaviour
         }
 #endif
 
-        Color button_color = Color.white;
-        Color text_color = Color.black;
+        // create a button, set it up
+        Button b = Instantiate(button_prefab);
+        Image button_image = b.GetComponent<Image>();
+        Text button_text = b.transform.GetChild(0).GetComponent<Text>();
+
+        button_text.text = $"{index + 1,2}";
+        b.transform.SetParent(button_panel.transform);
+        b.transform.localPosition = new float3(x, y, 0);
+        b.gameObject.SetActive(true);
 
         if (File.load_level(index) && index < max_level_enabled)
         {
+            button_image.color = Color.white;
             b.onClick.AddListener(() => { clicked(index); });
+            button_image.raycastTarget = true;
         }
         else
         {
-            button_color = Color.grey;
+            button_image.color = Color.grey;
+            button_image.raycastTarget = false;
         }
 
         if (Statics.level_complete[index])
         {
-            button_color = Color.yellow;
+            button_image.color = Color.yellow;
         }
 
         if (Statics.level_cheat[index])
         {
-            text_color = Color.magenta;
+            button_text.color = Color.magenta;
         }
-
-        b.transform.SetParent(button_panel.transform);
-        b.transform.localPosition = new float3(x, y, 0);
-        b.GetComponent<Image>().color = button_color;
-        b.transform.GetChild(0).GetComponent<Text>().text = $"{index + 1,2}";
-        b.transform.GetChild(0).GetComponent<Text>().color = text_color;
-        b.gameObject.SetActive(true);
     }
 
     // Start is called before the first frame update
