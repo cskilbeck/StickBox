@@ -23,7 +23,7 @@ public class FrontEnd : MonoBehaviour
         SceneManager.LoadScene("GameScene", LoadSceneMode.Single);
     }
 
-    void create_button(float x, float y, int index)
+    void create_button(float w, float h, int index)
     {
         // if last 10 levels complete and we're on a multiple of 10, enable the next 10 levels
         int last_ten_mask = (1 << 10) - 1;
@@ -49,7 +49,6 @@ public class FrontEnd : MonoBehaviour
 
         button_text.text = $"{index + 1,2}";
         b.transform.SetParent(button_panel.transform);
-        b.transform.localPosition = new float3(x, y, 0);
         b.gameObject.SetActive(true);
 
         if (File.load_level(index) && index < max_level_enabled)
@@ -79,15 +78,13 @@ public class FrontEnd : MonoBehaviour
     void Start()
     {
         Statics.LoadState();
-        float w = 72;
-        float h = 72;
-        float xo = w * 5 - w / 2;
-        float yo = h * 5 - h / 2;
+        float bw = 20;
+        float bh = 25;
         for (int y = 0; y < 10; ++y)
         {
             for (int x = 0; x < 10; ++x)
             {
-                create_button(x * w - xo, y * h - yo, y * 10 + x);
+                create_button(bw, bh, y * 10 + x);
             }
         }
     }
