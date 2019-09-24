@@ -864,6 +864,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   button_panel: {fileID: 865072856}
   button_prefab: {fileID: 735119323}
+  play_any_level: 0
 --- !u!4 &2078524529
 Transform:
   m_ObjectHideFlags: 0
