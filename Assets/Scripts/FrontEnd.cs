@@ -11,6 +11,8 @@ public class FrontEnd : MonoBehaviour
     public Button button_prefab;
     public bool play_any_level;
 
+    Vector2 screen_size;
+
     int highest_completed_level;
     int max_level_enabled = 10;
 
@@ -77,6 +79,7 @@ public class FrontEnd : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
+        screen_size = new Vector2(Screen.width, Screen.height);
         Statics.LoadState();
         float bw = 20;
         float bh = 25;
@@ -89,9 +92,16 @@ public class FrontEnd : MonoBehaviour
         }
     }
 
+    
+
     // Update is called once per frame
     void Update()
     {
+        if(screen_size.x != Screen.width || screen_size.y != Screen.height)
+        {
+            Debug.Log("!L:AYOUT!?");
+            screen_size = new Vector2(Screen.width, Screen.height);
+        }
         // Escape to quit
         if (Input.GetKeyDown(KeyCode.Escape))
         {
