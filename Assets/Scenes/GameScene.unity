@@ -133,6 +133,7 @@ GameObject:
   - component: {fileID: 45622797}
   - component: {fileID: 45622796}
   - component: {fileID: 45622795}
+  - component: {fileID: 45622798}
   m_Layer: 0
   m_Name: front
   m_TagString: Untagged
@@ -214,6 +215,18 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 45622793}
   m_Mesh: {fileID: 10210, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!122 &45622798
+Halo:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 45622793}
+  m_Enabled: 0
+  m_Color:
+    serializedVersion: 2
+    rgba: 4278251007
+  m_Size: 0.99
 --- !u!1 &46114353
 GameObject:
   m_ObjectHideFlags: 0
