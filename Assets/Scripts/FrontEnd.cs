@@ -9,14 +9,14 @@ public class FrontEnd : MonoBehaviour
 {
     public GameObject button_panel;
     public Button button_prefab;
-    public bool play_any_level;
+    public bool play_any_level = false;
 
     Vector2 screen_size;
 
     int highest_completed_level;
     int max_level_enabled = 10;
 
-    int completion_mask;
+    int completion_mask = 0;
 
     void clicked(int index)
     {
@@ -58,6 +58,16 @@ public class FrontEnd : MonoBehaviour
             button_image.color = Color.white;
             b.onClick.AddListener(() => { clicked(index); });
             button_image.raycastTarget = true;
+
+            if (Statics.level_complete[index])
+            {
+                button_image.color = Color.yellow;
+            }
+
+            if (Statics.level_cheat[index])
+            {
+                button_text.color = Color.magenta;
+            }
         }
         else
         {
@@ -65,20 +75,12 @@ public class FrontEnd : MonoBehaviour
             button_image.raycastTarget = false;
         }
 
-        if (Statics.level_complete[index])
-        {
-            button_image.color = Color.yellow;
-        }
-
-        if (Statics.level_cheat[index])
-        {
-            button_text.color = Color.magenta;
-        }
     }
 
     // Start is called before the first frame update
     void Start()
     {
+        Screen.fullScreen = false;
         screen_size = new Vector2(Screen.width, Screen.height);
         Statics.LoadState();
         float bw = 20;
