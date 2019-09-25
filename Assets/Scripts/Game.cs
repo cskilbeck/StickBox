@@ -72,8 +72,8 @@ public class Game : MonoBehaviour
 
     //////////////////////////////////////////////////////////////////////
 
-    static readonly int max_grid_width = 16;
-    static readonly int max_grid_height = 16;
+    static readonly int max_grid_width = 17;
+    static readonly int max_grid_height = 17;
     static float3 block_scale;
 
     //////////////////////////////////////////////////////////////////////
