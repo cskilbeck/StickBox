@@ -25,8 +25,12 @@ public class FrontEnd : MonoBehaviour
         SceneManager.LoadScene("GameScene", LoadSceneMode.Single);
     }
 
-    void create_button(float w, float h, int index)
+    float2 button_border = new float2(10, 10);
+
+    void create_button(float2 size, float2 scale, float text_size, int index)
     {
+        float2 pos = new float2((index % 10) - 4.5f, (index / 10) - 4.5f) * scale;
+
         // if last 10 levels complete and we're on a multiple of 10, enable the next 10 levels
         int last_ten_mask = (1 << 10) - 1;
         if ((index % 10) == 0 && (completion_mask & last_ten_mask) == last_ten_mask)
@@ -48,9 +52,15 @@ public class FrontEnd : MonoBehaviour
         Button b = Instantiate(button_prefab);
         Image button_image = b.GetComponent<Image>();
         Text button_text = b.transform.GetChild(0).GetComponent<Text>();
+        RectTransform rect = b.GetComponent<RectTransform>();
+
+        button_text.fontSize = (int)text_size;
+
+        rect.offsetMin = pos - size / 2;
+        rect.offsetMax = pos + size / 2;
 
         button_text.text = $"{index + 1,2}";
-        b.transform.SetParent(button_panel.transform);
+        b.transform.SetParent(button_panel.GetComponent<RectTransform>().transform, false);
         b.gameObject.SetActive(true);
 
         if (File.load_level(index) && index < max_level_enabled)
@@ -80,26 +90,29 @@ public class FrontEnd : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        Screen.fullScreen = false;
         screen_size = new Vector2(Screen.width, Screen.height);
+
+        Rect button_panel_rect = button_panel.GetComponent<RectTransform>().rect;
+        float2 panel_size = button_panel_rect.max - button_panel_rect.min;
+        float2 button_size = panel_size / 12;
+        float2 button_scale = panel_size / 11;
+        float text_size = button_size.x * 0.75f;
         Statics.LoadState();
-        float bw = 20;
-        float bh = 25;
         for (int y = 0; y < 10; ++y)
         {
             for (int x = 0; x < 10; ++x)
             {
-                create_button(bw, bh, y * 10 + x);
+                create_button(button_size, button_scale, text_size, y * 10 + x);
             }
         }
     }
 
-    
+
 
     // Update is called once per frame
     void Update()
     {
-        if(screen_size.x != Screen.width || screen_size.y != Screen.height)
+        if (screen_size.x != Screen.width || screen_size.y != Screen.height)
         {
             Debug.Log("!L:AYOUT!?");
             screen_size = new Vector2(Screen.width, Screen.height);
