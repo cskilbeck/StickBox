@@ -10,141 +10,143 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 400e0d0a81ea6e4448ae238996d50fb2, type: 3}
-  m_Name: level_35
+  m_Name: level_36
   m_EditorClassIdentifier: 
-  width: 14
-  height: 15
+  width: 7
+  height: 7
   start_blocks:
   - position:
+      x: 0
+      y: 1
+    flags: 0
+  - position:
+      x: 1
+      y: 1
+    flags: 0
+  - position:
       x: 4
+      y: 0
+    flags: 0
+  - position:
+      x: 6
+      y: 0
+    flags: 0
+  - position:
+      x: 0
       y: 4
+    flags: 0
+  - position:
+      x: 1
+      y: 3
+    flags: 0
+  - position:
+      x: 4
+      y: 2
+    flags: 0
+  - position:
+      x: 6
+      y: 1
+    flags: 0
+  - position:
+      x: 0
+      y: 5
+    flags: 0
+  - position:
+      x: 3
+      y: 4
+    flags: 1
+  - position:
+      x: 3
+      y: 3
+    flags: 0
+  - position:
+      x: 6
+      y: 2
+    flags: 0
+  - position:
+      x: 0
+      y: 6
+    flags: 0
+  - position:
+      x: 3
+      y: 6
     flags: 0
   - position:
       x: 5
-      y: 1
+      y: 6
     flags: 0
-  - position:
-      x: 7
-      y: 1
-    flags: 0
-  - position:
-      x: 9
-      y: 1
-    flags: 0
-  - position:
-      x: 7
-      y: 5
-    flags: 0
-  - position:
-      x: 9
-      y: 5
-    flags: 1
   - position:
       x: 6
-      y: 8
-    flags: 0
-  - position:
-      x: 9
       y: 4
     flags: 0
-  - position:
-      x: 1
-      y: 5
-    flags: 0
-  - position:
-      x: 9
-      y: 8
-    flags: 0
-  - position:
-      x: 4
-      y: 11
-    flags: 0
-  - position:
-      x: 9
-      y: 10
-    flags: 0
-  - position:
-      x: 1
-      y: 13
-    flags: 0
-  - position:
-      x: 7
-      y: 12
-    flags: 0
   win_blocks:
+  - x: 0
+    y: 6
+  - x: 0
+    y: 5
+  - x: 0
+    y: 4
+  - x: 0
+    y: 3
   - x: 1
-    y: 13
+    y: 3
   - x: 1
-    y: 12
+    y: 4
   - x: 1
-    y: 11
+    y: 5
   - x: 1
-    y: 10
+    y: 6
+  - x: 2
+    y: 6
+  - x: 2
+    y: 5
+  - x: 2
+    y: 4
+  - x: 2
+    y: 3
+  - x: 3
+    y: 3
+  - x: 3
+    y: 4
+  - x: 3
+    y: 5
+  - x: 3
+    y: 6
+  - x: 0
+    y: 3
   - x: 1
-    y: 9
+    y: 3
+  - x: 2
+    y: 3
+  - x: 3
+    y: 3
+  - x: 0
+    y: 4
   - x: 1
-    y: 8
+    y: 4
+  - x: 2
+    y: 4
+  - x: 3
+    y: 4
+  - x: 0
+    y: 5
   - x: 1
-    y: 7
+    y: 5
   - x: 2
-    y: 7
-  - x: 2
-    y: 8
-  - x: 2
-    y: 9
-  - x: 2
-    y: 10
-  - x: 2
-    y: 12
-  - x: 2
-    y: 11
-  - x: 2
-    y: 13
+    y: 5
+  - x: 3
+    y: 5
+  - x: 0
+    y: 6
   - x: 1
-    y: 7
+    y: 6
   - x: 2
-    y: 7
-  - x: 1
-    y: 8
-  - x: 2
-    y: 8
-  - x: 1
-    y: 9
-  - x: 2
-    y: 9
-  - x: 1
-    y: 10
-  - x: 2
-    y: 10
-  - x: 1
-    y: 11
-  - x: 2
-    y: 11
-  - x: 1
-    y: 12
-  - x: 2
-    y: 12
-  - x: 1
-    y: 13
-  - x: 2
-    y: 13
+    y: 6
+  - x: 3
+    y: 6
   solution:
-  - x: 0
-    y: -1
   - x: 1
     y: 0
-  - x: 0
-    y: 1
-  - x: 0
-    y: 1
-  - x: 1
-    y: 0
-  - x: 0
-    y: -1
-  - x: 1
-    y: 0
-  - x: 0
-    y: -1
   - x: 0
     y: -1
   - x: 0
@@ -153,8 +155,18 @@ MonoBehaviour:
     y: 0
   - x: 0
     y: 1
+  - x: -1
+    y: 0
+  - x: -1
+    y: 0
+  - x: 0
+    y: 1
+  - x: 0
+    y: 1
   - x: 1
     y: 0
+  - x: 0
+    y: -1
   banner_text: {fileID: 0}
   banner_text_movement_curve:
     serializedVersion: 2
@@ -162,5 +174,5 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
-  mode_timer: 322.71884
+  mode_timer: 52.398903
   game_start_time: 0

@@ -10,185 +10,229 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 400e0d0a81ea6e4448ae238996d50fb2, type: 3}
-  m_Name: level_39
+  m_Name: level_38
   m_EditorClassIdentifier: 
-  width: 10
+  width: 11
   height: 16
   start_blocks:
+  - position:
+      x: 2
+      y: 2
+    flags: 0
+  - position:
+      x: 6
+      y: 2
+    flags: 0
+  - position:
+      x: 8
+      y: 2
+    flags: 0
+  - position:
+      x: 0
+      y: 4
+    flags: 0
+  - position:
+      x: 2
+      y: 3
+    flags: 0
+  - position:
+      x: 6
+      y: 3
+    flags: 0
+  - position:
+      x: 8
+      y: 3
+    flags: 0
+  - position:
+      x: 10
+      y: 3
+    flags: 0
+  - position:
+      x: 0
+      y: 5
+    flags: 0
+  - position:
+      x: 2
+      y: 4
+    flags: 0
+  - position:
+      x: 8
+      y: 4
+    flags: 0
+  - position:
+      x: 10
+      y: 6
+    flags: 1
   - position:
       x: 0
       y: 6
     flags: 0
   - position:
-      x: 3
+      x: 2
+      y: 5
+    flags: 0
+  - position:
+      x: 6
       y: 6
     flags: 0
   - position:
-      x: 7
-      y: 1
+      x: 8
+      y: 6
     flags: 0
   - position:
-      x: 8
-      y: 1
+      x: 0
+      y: 7
+    flags: 0
+  - position:
+      x: 2
+      y: 7
     flags: 0
   - position:
       x: 3
-      y: 9
-    flags: 0
-  - position:
-      x: 5
-      y: 8
-    flags: 0
-  - position:
-      x: 8
-      y: 8
-    flags: 0
-  - position:
-      x: 7
       y: 7
     flags: 0
   - position:
       x: 6
-      y: 11
-    flags: 1
-  - position:
-      x: 8
-      y: 11
-    flags: 0
-  - position:
-      x: 3
-      y: 11
-    flags: 0
-  - position:
-      x: 5
-      y: 11
-    flags: 0
-  - position:
-      x: 5
-      y: 13
-    flags: 0
-  - position:
-      x: 7
-      y: 13
-    flags: 0
-  - position:
-      x: 0
-      y: 14
-    flags: 0
-  - position:
-      x: 1
-      y: 14
-    flags: 0
-  - position:
-      x: 7
-      y: 15
+      y: 7
     flags: 0
   - position:
       x: 9
-      y: 15
+      y: 8
+    flags: 0
+  - position:
+      x: 5
+      y: 9
+    flags: 0
+  - position:
+      x: 6
+      y: 9
+    flags: 0
+  - position:
+      x: 8
+      y: 14
     flags: 0
   win_blocks:
-  - x: 9
-    y: 15
-  - x: 8
-    y: 15
-  - x: 8
+  - x: 1
     y: 14
-  - x: 7
-    y: 14
-  - x: 7
+  - x: 1
     y: 13
-  - x: 6
-    y: 13
-  - x: 6
+  - x: 1
     y: 12
-  - x: 5
-    y: 12
-  - x: 5
+  - x: 1
     y: 11
+  - x: 1
+    y: 9
+  - x: 2
+    y: 10
+  - x: 1
+    y: 10
+  - x: 2
+    y: 9
+  - x: 3
+    y: 9
+  - x: 3
+    y: 10
+  - x: 3
+    y: 11
+  - x: 3
+    y: 13
+  - x: 3
+    y: 12
+  - x: 3
+    y: 14
+  - x: 2
+    y: 14
+  - x: 2
+    y: 13
+  - x: 0
+    y: 12
+  - x: 0
+    y: 11
+  - x: 0
+    y: 13
+  - x: 0
+    y: 10
+  - x: 4
+    y: 13
+  - x: 4
+    y: 12
   - x: 4
     y: 11
   - x: 4
-    y: 15
-  - x: 5
-    y: 15
-  - x: 5
-    y: 14
-  - x: 6
-    y: 14
-  - x: 7
-    y: 12
-  - x: 8
-    y: 12
-  - x: 8
+    y: 10
+  - x: 1
+    y: 9
+  - x: 2
+    y: 9
+  - x: 3
+    y: 9
+  - x: 0
+    y: 10
+  - x: 1
+    y: 10
+  - x: 2
+    y: 10
+  - x: 3
+    y: 10
+  - x: 4
+    y: 10
+  - x: 0
     y: 11
-  - x: 9
+  - x: 1
+    y: 11
+  - x: 3
     y: 11
   - x: 4
     y: 11
-  - x: 5
-    y: 11
-  - x: 8
-    y: 11
-  - x: 9
-    y: 11
-  - x: 5
+  - x: 0
     y: 12
-  - x: 6
+  - x: 1
     y: 12
-  - x: 7
+  - x: 3
     y: 12
-  - x: 8
-    y: 12
-  - x: 6
-    y: 13
-  - x: 7
-    y: 13
-  - x: 5
-    y: 14
-  - x: 6
-    y: 14
-  - x: 7
-    y: 14
-  - x: 8
-    y: 14
   - x: 4
-    y: 15
-  - x: 5
-    y: 15
-  - x: 8
-    y: 15
-  - x: 9
-    y: 15
+    y: 12
+  - x: 0
+    y: 13
+  - x: 1
+    y: 13
+  - x: 2
+    y: 13
+  - x: 3
+    y: 13
+  - x: 4
+    y: 13
+  - x: 1
+    y: 14
+  - x: 2
+    y: 14
+  - x: 3
+    y: 14
   solution:
-  - x: -1
-    y: 0
-  - x: 0
-    y: -1
-  - x: 0
-    y: 1
-  - x: -1
-    y: 0
-  - x: 0
-    y: -1
   - x: 1
     y: 0
+  - x: 0
+    y: -1
   - x: -1
     y: 0
   - x: 0
-    y: 1
-  - x: 0
     y: -1
+  - x: -1
+    y: 0
+  - x: -1
+    y: 0
   - x: 1
     y: 0
   - x: 0
     y: -1
   - x: 1
     y: 0
+  - x: 1
+    y: 0
+  - x: 1
+    y: 0
   - x: 0
     y: 1
-  - x: -1
-    y: 0
   banner_text: {fileID: 0}
   banner_text_movement_curve:
     serializedVersion: 2
@@ -196,5 +240,5 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
-  mode_timer: 305.00323
+  mode_timer: 228.78561
   game_start_time: 0
