@@ -293,6 +293,7 @@ public class Game : MonoBehaviour
         solution_objects = new List<GameObject>();
 
         load_level(Statics.level_index);
+        Level.mode_banners[Mode.prepare_to_play] = $"Level {Statics.level_index + 1}";
         current_level.current_mode = Mode.prepare_to_play;
     }
 

@@ -78,7 +78,7 @@ public class Level : ScriptableObject
             mode_timer = Time.realtimeSinceStartup;
             Debug.Log($"MODE: {value} at {mode_timer}");
             string s;
-            if (Level.mode_banners.TryGetValue(_current_mode, out s))
+            if (mode_banners.TryGetValue(_current_mode, out s))
             {
                 set_banner_text(s);
             }
