@@ -53,6 +53,31 @@ public class Level : ScriptableObject
     public float mode_timer;
     public float game_start_time;
 
+    //////////////////////////////////////////////////////////////////////
+
+    [NonSerialized]
+    public Block[,] board;
+
+    [NonSerialized]
+    public List<Block> blocks;
+
+    public enum move_result
+    {
+        hit_block = 1,
+        hit_side = 2,
+        hit_solution = 3
+    }
+
+    static readonly int2[] compass_directions = new int2[4]
+    {
+        Game.up,
+        Game.right,
+        Game.down,
+        Game.left
+    };
+
+    //////////////////////////////////////////////////////////////////////
+
     public float mode_time_elapsed
     {
         get
@@ -61,6 +86,8 @@ public class Level : ScriptableObject
         }
     }
 
+    //////////////////////////////////////////////////////////////////////
+
     public float game_time_elapsed
     {
         get
@@ -68,6 +95,8 @@ public class Level : ScriptableObject
             return Time.realtimeSinceStartup - game_start_time;
         }
     }
+
+    //////////////////////////////////////////////////////////////////////
 
     public Game.Mode current_mode
     {
@@ -82,6 +111,48 @@ public class Level : ScriptableObject
             {
                 set_banner_text(s);
             }
+        }
+    }
+
+    //////////////////////////////////////////////////////////////////////
+    // for sorting the levels easiest first
+
+    public int difficulty
+    {
+        get
+        {
+            const int move_difficulty_constant = 5;
+
+            int total_distance = 0;
+
+            Level l = Instantiate(this);
+            l.reset_board();
+            l.copy_blocks_from(this);
+
+            int move = l.solution.Count - 1;
+            while (move >= 0)
+            {
+                int2 v = l.solution[move] * -1;
+                move -= 1;
+                int distance;
+                move_result r = l.get_move_result(v, out distance);
+                if (r == move_result.hit_side)
+                {
+                    return -1;
+                }
+                if (r == move_result.hit_solution)
+                {
+                    break;
+                }
+                l.update_block_positions(v * distance);
+                l.update_hit_blocks(v);
+                total_distance += distance;
+            }
+            if(!l.is_solution_complete(int2.zero))
+            {
+                return -1;
+            }
+            return l.solution.Count * move_difficulty_constant + total_distance;
         }
     }
 
@@ -122,31 +193,12 @@ public class Level : ScriptableObject
 
     //////////////////////////////////////////////////////////////////////
 
-    [NonSerialized]
-    public Block[,] board;
-
-    [NonSerialized]
-    public List<Block> blocks;
-
-    public enum move_result
-    {
-        hit_block = 1,
-        hit_side = 2,
-        hit_solution = 3
-    }
-
-    static readonly int2[] compass_directions = new int2[4]
-    {
-        Game.up,
-        Game.right,
-        Game.down,
-        Game.left
-    };
-
     public Block block_at(int2 pos)
     {
         return block_at(pos.x, pos.y);
     }
+
+    //////////////////////////////////////////////////////////////////////
 
     public Block block_at(int x, int y)
     {
@@ -156,6 +208,8 @@ public class Level : ScriptableObject
         }
         return board[x, y];
     }
+
+    //////////////////////////////////////////////////////////////////////
 
     public void set_block_at(int2 pos, Block b)
     {
@@ -177,17 +231,23 @@ public class Level : ScriptableObject
         reset_board();
     }
 
+    //////////////////////////////////////////////////////////////////////
+
     public void reset_board()
     {
         board = new Block[width, height];
         blocks = new List<Block>();
     }
 
+    //////////////////////////////////////////////////////////////////////
+
     public Level(int w, int h)
     {
         name = $"Level {w},{h}";
         create_board(w, h);
     }
+
+    //////////////////////////////////////////////////////////////////////
 
     public Level(Level other)
     {
