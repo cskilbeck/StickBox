@@ -125,34 +125,32 @@ public class Level : ScriptableObject
 
             int total_distance = 0;
 
-            Level l = Instantiate(this);
-            l.reset_board();
-            l.copy_blocks_from(this);
+            reset_board();
 
-            int move = l.solution.Count - 1;
+            int move = solution.Count - 1;
             while (move >= 0)
             {
-                int2 v = l.solution[move] * -1;
+                int2 v = solution[move] * -1;
                 move -= 1;
                 int distance;
-                move_result r = l.get_move_result(v, out distance);
+                move_result r = get_move_result(v, out distance);
                 if (r == move_result.hit_side)
                 {
-                    return -1;
+                    throw new LevelDifficultyException($"Invalid level!");
                 }
                 if (r == move_result.hit_solution)
                 {
                     break;
                 }
-                l.update_block_positions(v * distance);
-                l.update_hit_blocks(v);
+                update_block_positions(v * distance);
+                update_hit_blocks(v);
                 total_distance += distance;
             }
-            if(!l.is_solution_complete(int2.zero))
+            if (!is_solution_complete(int2.zero))
             {
-                return -1;
+                throw new LevelDifficultyException($"Invalid level!");
             }
-            return l.solution.Count * move_difficulty_constant + total_distance;
+            return solution.Count * move_difficulty_constant + total_distance;
         }
     }
 
@@ -407,8 +405,6 @@ public class Level : ScriptableObject
     //////////////////////////////////////////////////////////////////////
     // mark all stuck blocks which hit free blocks as stuck 
 
-    // flood fill from all freshly hit blocks
-
     public void update_hit_blocks(int2 direction)
     {
         foreach (Block b in blocks)
@@ -440,6 +436,8 @@ public class Level : ScriptableObject
             }
         }
     }
+
+    // flood fill from all freshly hit blocks
 
     void flood_fill(Block b)
     {
@@ -553,6 +551,8 @@ public class Level : ScriptableObject
         }
     }
 
+    //////////////////////////////////////////////////////////////////////
+
     public void reset()
     {
         destroy_blocks();
@@ -595,6 +595,8 @@ public class Level : ScriptableObject
         return b;
     }
 
+    //////////////////////////////////////////////////////////////////////
+
     public void create_blocks(Color stuck_color, Color moving_color)
     {
         destroy_blocks();
@@ -608,5 +610,12 @@ public class Level : ScriptableObject
             set_block_position(block, p.position);
             update_block_graphics();
         }
+    }
+
+    //////////////////////////////////////////////////////////////////////
+
+    public void create_blocks()
+    {
+        create_blocks(Color.yellow, Color.blue);
     }
 }

@@ -9,6 +9,7 @@ using Unity.Mathematics;
 using UnityEngine;
 using UnityEditor;
 using UnityEngine.UI;
+using System;
 
 //////////////////////////////////////////////////////////////////////
 
@@ -379,9 +380,46 @@ public class Main : MonoBehaviour
         Debug.LogError(o);
     }
 
-    public void on_undo_click()
+    //////////////////////////////////////////////////////////////////////
+
+    public void on_sort_click()
     {
+#if UNITY_EDITOR
+        try
+        {
+            List<Tuple<int, int>> levels = new List<Tuple<int, int>>();
+            for (int i = 0; i < 100; ++i)
+            {
+                Level l = File.load_level(i);
+                if (l == null)
+                {
+                    throw new LevelDifficultyException($"Can't find level {i}");
+                }
+                start_level(l);
+                int d = l.difficulty;
+                levels.Add(new Tuple<int, int>(i, d));
+            }
+            levels.Sort((Tuple<int, int> a, Tuple<int, int> b) =>
+            {
+                return a.Item2 - a.Item1;
+            });
+            int[] level_index = new int[100];
+            for (int i = 0; i < 100; ++i)
+            {
+                level_index[i] = levels[i].Item2;
+                string name = $"sorted_levels";
+                string asset_name = $"Assets/Resources/{name}.asset";
+                AssetDatabase.CreateAsset(current_level, asset_name);
+            }
+        }
+        catch (LevelDifficultyException e)
+        {
+            Debug.LogError(e.Message);
+        }
+#endif
     }
+
+    //////////////////////////////////////////////////////////////////////
 
     public void on_help_click()
     {
@@ -397,11 +435,15 @@ public class Main : MonoBehaviour
         }
     }
 
+    //////////////////////////////////////////////////////////////////////
+
     public void on_reset_level_click()
     {
         start_level(current_level);
         current_level.current_mode = Game.Mode.make_move;
     }
+
+    //////////////////////////////////////////////////////////////////////
 
     public void on_new_level_click()
     {
@@ -414,14 +456,18 @@ public class Main : MonoBehaviour
         current_level.current_mode = Game.Mode.set_grid_size;
     }
 
+    //////////////////////////////////////////////////////////////////////
+
     public void on_load_level_click()
     {
         int x;
-        if(int.TryParse(level_name_input_field.text, out x))
+        if (int.TryParse(level_name_input_field.text, out x))
         {
             play_level(x);
         }
     }
+
+    //////////////////////////////////////////////////////////////////////
 
     public void on_save_level_click()
     {
