@@ -395,22 +395,23 @@ public class Main : MonoBehaviour
                 {
                     throw new LevelDifficultyException($"Can't find level {i}");
                 }
-                start_level(l);
+                l.create_block_object = (Color c) => { return null; };
+                l.get_board_coordinate = (int2 c) => { return new float3 (c.x, c.y, 0); };
                 int d = l.difficulty;
                 levels.Add(new Tuple<int, int>(i, d));
             }
             levels.Sort((Tuple<int, int> a, Tuple<int, int> b) =>
             {
-                return a.Item2 - a.Item1;
+                return a.Item2 - b.Item2;
             });
-            int[] level_index = new int[100];
+            Difficulty difficulty = ScriptableObject.CreateInstance<Difficulty>();
             for (int i = 0; i < 100; ++i)
             {
-                level_index[i] = levels[i].Item2;
-                string name = $"sorted_levels";
-                string asset_name = $"Assets/Resources/{name}.asset";
-                AssetDatabase.CreateAsset(current_level, asset_name);
+                difficulty.level_index[i] = levels[i].Item1;
             }
+            string name = $"sorted_levels";
+            string asset_name = $"Assets/Resources/{name}.asset";
+            AssetDatabase.CreateAsset(difficulty, asset_name);
         }
         catch (LevelDifficultyException e)
         {

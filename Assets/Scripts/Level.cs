@@ -121,11 +121,13 @@ public class Level : ScriptableObject
     {
         get
         {
-            const int move_difficulty_constant = 5;
+            const int move_difficulty_constant = 16;
 
             int total_distance = 0;
 
             reset_board();
+            destroy_blocks();
+            create_blocks();
 
             int move = solution.Count - 1;
             while (move >= 0)
@@ -140,7 +142,7 @@ public class Level : ScriptableObject
                 }
                 if (r == move_result.hit_solution)
                 {
-                    break;
+                    return solution.Count * move_difficulty_constant + total_distance;
                 }
                 update_block_positions(v * distance);
                 update_hit_blocks(v);
@@ -571,7 +573,10 @@ public class Level : ScriptableObject
 
     public void update_block_graphics_position(Block b)
     {
-        b.game_object.transform.localPosition = board_coordinate(b.position);
+        if(b.game_object != null)
+        {
+            b.game_object.transform.localPosition = board_coordinate(b.position);
+        }
     }
 
     //////////////////////////////////////////////////////////////////////
