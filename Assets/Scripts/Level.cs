@@ -121,36 +121,45 @@ public class Level : ScriptableObject
     {
         get
         {
-            const int move_difficulty_constant = 16;
+            const int move_difficulty_constant = 8;
 
             int total_distance = 0;
 
-            reset_board();
-            destroy_blocks();
             create_blocks();
 
             int move = solution.Count - 1;
             while (move >= 0)
             {
+                // count how many directions are possible at this stage
+                int possible_moves = 0;
+                foreach (int2 dir in compass_directions)
+                {
+                    move_result result = get_move_result(dir, out int dist);
+                    if (result == move_result.hit_block || result == move_result.hit_solution)
+                    {
+                        possible_moves += 1;
+                    }
+                }
+
                 int2 v = solution[move] * -1;
                 move -= 1;
                 int distance;
                 move_result r = get_move_result(v, out distance);
                 if (r == move_result.hit_side)
                 {
-                    throw new LevelDifficultyException($"Invalid level!");
+                    throw new InvalidLevelException($"Invalid level!");
                 }
+                total_distance += distance * possible_moves;
                 if (r == move_result.hit_solution)
                 {
                     return solution.Count * move_difficulty_constant + total_distance;
                 }
                 update_block_positions(v * distance);
                 update_hit_blocks(v);
-                total_distance += distance;
             }
             if (!is_solution_complete(int2.zero))
             {
-                throw new LevelDifficultyException($"Invalid level!");
+                throw new InvalidLevelException($"Invalid level!");
             }
             return solution.Count * move_difficulty_constant + total_distance;
         }
@@ -573,7 +582,7 @@ public class Level : ScriptableObject
 
     public void update_block_graphics_position(Block b)
     {
-        if(b.game_object != null)
+        if (b.game_object != null)
         {
             b.game_object.transform.localPosition = board_coordinate(b.position);
         }

@@ -390,13 +390,13 @@ public class Main : MonoBehaviour
             List<Tuple<int, int>> levels = new List<Tuple<int, int>>();
             for (int i = 0; i < 100; ++i)
             {
-                Level l = File.load_level(i);
+                Level l = File.load_level_by_id(i);
                 if (l == null)
                 {
-                    throw new LevelDifficultyException($"Can't find level {i}");
+                    throw new InvalidLevelException($"Can't find level {i}");
                 }
                 l.create_block_object = (Color c) => { return null; };
-                l.get_board_coordinate = (int2 c) => { return new float3 (c.x, c.y, 0); };
+                l.get_board_coordinate = (int2 c) => { return new float3(c.x, c.y, 0); };
                 int d = l.difficulty;
                 levels.Add(new Tuple<int, int>(i, d));
             }
@@ -407,13 +407,14 @@ public class Main : MonoBehaviour
             Difficulty difficulty = ScriptableObject.CreateInstance<Difficulty>();
             for (int i = 0; i < 100; ++i)
             {
+                Debug.Log($"Level {i,2:00} = {levels[i].Item2} (was {levels[i].Item1})");
                 difficulty.level_index[i] = levels[i].Item1;
             }
             string name = $"sorted_levels";
             string asset_name = $"Assets/Resources/{name}.asset";
             AssetDatabase.CreateAsset(difficulty, asset_name);
         }
-        catch (LevelDifficultyException e)
+        catch (InvalidLevelException e)
         {
             Debug.LogError(e.Message);
         }

@@ -1,8 +1,8 @@
 ﻿using System;
 
-public class LevelDifficultyException : Exception
+public class InvalidLevelException : Exception
 {
-    public LevelDifficultyException(string s) : base(s)
+    public InvalidLevelException(string s) : base(s)
     {
     }
 };

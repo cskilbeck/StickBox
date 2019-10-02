@@ -7,6 +7,17 @@ public static class File
 {
     public static Difficulty difficulty;
 
+    public static Level load_level_by_id(int level_index)
+    {
+#if UNITY_EDITOR
+        string name = $"level_{level_index,2:00}";
+        return AssetDatabase.LoadAssetAtPath<Level>($"Assets/Resources/{name}.asset");
+#else
+        string name = $"level_{level_index,2:00}";
+        return Resources.Load<Level>(name);
+#endif
+    }
+
     public static Level load_level(int index)
     {
 #if UNITY_EDITOR
@@ -14,17 +25,13 @@ public static class File
         {
             difficulty = AssetDatabase.LoadAssetAtPath<Difficulty>("Assets/Resources/sorted_levels.asset");
         }
-        int level_index = difficulty.level_index[index];
-        string name = $"level_{level_index,2:00}";
-        return AssetDatabase.LoadAssetAtPath<Level>($"Assets/Resources/{name}.asset");
+        return load_level_by_id(difficulty.level_index[index]);
 #else
         if(difficulty == null)
         {
             difficulty = Resources.Load<Difficulty>("sorted_levels");
         }
-        int level_index = difficulty.level_index[index];
-        string name = $"level_{level_index,2:00}";
-        return Resources.Load<Level>(name);
+        return load_level_by_id(difficulty.level_index[index]);
 #endif
     }
 }
