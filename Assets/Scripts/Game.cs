@@ -1,4 +1,8 @@
-﻿using System.Collections;
+﻿// Flow
+// When you succeed or fail, after a while it [retries or moves to next level] automatically
+// 
+
+using System.Collections;
 using System.Collections.Generic;
 
 using UnityEngine;
@@ -14,6 +18,7 @@ public class Game : MonoBehaviour
     public GameObject front_face;
     public GameObject main_cube;
     public GameObject banner_text;
+    public GameObject header_text;
     public AnimationCurve block_movement_curve = AnimationCurve.Linear(0, 0, 1, 1);
     public AnimationCurve banner_text_movement_curve = AnimationCurve.EaseInOut(0, 0, 1, 1);
 
@@ -244,6 +249,7 @@ public class Game : MonoBehaviour
             current_level.create_block_object = create_block_object;
             current_level.banner_text = banner_text;
             current_level.banner_text_movement_curve = banner_text_movement_curve;
+            header_text.GetComponent<Text>().text = $"Level {index + 1}";
             start_level();
         }
     }
@@ -379,7 +385,7 @@ public class Game : MonoBehaviour
         }
     }
 
-    void animate_win()
+    void animate_win(int level_increment)
     {
         float t = current_level.mode_time_elapsed;
         float y = (-16 * (t * t) + t * 5) * (block_depth * 4) + block_depth;
@@ -389,7 +395,15 @@ public class Game : MonoBehaviour
         }
         if (t >= 1.5f)
         {
-            SceneManager.LoadScene("FrontEndScene", LoadSceneMode.Single);
+            Statics.level_index += level_increment;
+            if (Statics.level_index <= 99)
+            {
+                SceneManager.LoadScene("GameScene", LoadSceneMode.Single);
+            }
+            else
+            {
+                SceneManager.LoadScene("FrontEndScene", LoadSceneMode.Single);
+            }
         }
     }
 
@@ -445,15 +459,19 @@ public class Game : MonoBehaviour
                     {
                         Main.set_color(o, Color.red);// new Color(t, t, t, t));
                     }
+                    if (current_level.mode_time_elapsed > 1)
+                    {
+                        SceneManager.LoadScene("GameScene", LoadSceneMode.Single);
+                    }
                 }
                 break;
 
             case Mode.solution_ended:
-                animate_win();
+                animate_win(0);
                 break;
 
             case Mode.winner:
-                animate_win();
+                animate_win(1);
                 break;
 
             case Mode.prepare_to_show_solution:
