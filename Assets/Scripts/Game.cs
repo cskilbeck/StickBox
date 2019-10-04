@@ -192,7 +192,7 @@ public class Game : MonoBehaviour
         }
     }
 
-    GameObject create_neighbour(int2 b, GameObject parent, int2 board_offset, float angle, Vector3 axis, Vector3 offset)
+    GameObject create_neighbour(int2 b, GameObject parent, int2 board_offset, float angle, Vector3 axis, Vector3 offset, Vector3 edge_scale, float edge_height)
     {
         if (!neighbour(b, board_offset))
         {
@@ -202,6 +202,18 @@ public class Game : MonoBehaviour
             quad.transform.localScale = block_scale;
             quad.transform.rotation = Quaternion.AngleAxis(angle, axis);
             quad.transform.localPosition = offset;
+            quad.tag = "solution";
+
+            // thin cube for top edge lines
+            GameObject quad2 = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            quad2.GetComponent<Renderer>().material = solution_material;
+            quad2.transform.SetParent(parent.transform, false);
+            quad2.transform.localScale = edge_scale * block_scale;
+            quad2.transform.rotation = Quaternion.AngleAxis(angle, axis);
+            quad2.transform.localPosition = offset + new Vector3(0, 0, edge_height);
+            Main.set_color(quad2, Color.cyan);
+            quad2.tag = "border";
+
             return quad;
         }
         return null;
@@ -209,17 +221,22 @@ public class Game : MonoBehaviour
 
     public GameObject create_solution_object(int2 b)
     {
+        float edge_scale = 0.075f;
+        Vector3 x_edge = new Vector3(edge_scale, 1, edge_scale);
+        Vector3 y_edge = new Vector3(1, edge_scale, edge_scale);
+        float edge_height = -block_scale.z / 2 - block_scale.z * edge_scale / 2;
         GameObject solution_object = new GameObject();
-        create_neighbour(b, solution_object, left, 90, Vector3.up, new Vector3(-block_scale.x / 2, 0, 0));
-        create_neighbour(b, solution_object, right, -90, Vector3.up, new Vector3(block_scale.x / 2, 0, 0));
-        create_neighbour(b, solution_object, up, 90, Vector3.right, new Vector3(0, block_scale.y / 2, 0));
-        create_neighbour(b, solution_object, down, -90, Vector3.right, new Vector3(0, -block_scale.y / 2, 0));
+        create_neighbour(b, solution_object, left, 90, Vector3.up, new Vector3(-block_scale.x / 2, 0, 0), x_edge, edge_height);          // rotate 90 around Y axis
+        create_neighbour(b, solution_object, right, -90, Vector3.up, new Vector3(block_scale.x / 2, 0, 0), x_edge, edge_height);         // -90 around Y
+        create_neighbour(b, solution_object, up, 90, Vector3.right, new Vector3(0, block_scale.y / 2, 0), y_edge, edge_height);          // 90 around X
+        create_neighbour(b, solution_object, down, -90, Vector3.right, new Vector3(0, -block_scale.y / 2, 0), y_edge, edge_height);      // -90 around X
 
         GameObject top = GameObject.CreatePrimitive(PrimitiveType.Quad);
         top.transform.localScale = block_scale;
         top.GetComponent<Renderer>().material = solution_material;
         top.transform.SetParent(solution_object.transform, false);
         top.transform.localPosition = new Vector3(0, 0, block_depth);
+        top.tag = "solution";
 
         solution_object.transform.SetParent(front_face.transform, false);
         solution_object.transform.localPosition = board_coordinate(b, block_depth);
@@ -256,7 +273,7 @@ public class Game : MonoBehaviour
 
     void start_level()
     {
-        destroy_boundary();
+        //destroy_boundary();
         destroy_level();
         current_level.create_blocks(stuck_color, moving_color);
         foreach (int2 b in current_level.win_blocks)
@@ -264,7 +281,7 @@ public class Game : MonoBehaviour
             GameObject s = create_solution_object(b);
             solution_objects.Add(s);
         }
-        create_boundary();
+        //create_boundary();
         current_level.game_start_time = Time.realtimeSinceStartup;
     }
 
@@ -411,14 +428,17 @@ public class Game : MonoBehaviour
     {
         if (current_level.game_time_elapsed < 0.5f)
         {
-            float a = Mathf.Sin(current_level.game_time_elapsed * 50) * 0.05f + 0.1f;
+            float a = Mathf.Sin(current_level.game_time_elapsed * 50) * 0.025f + 0.05f;
             Color c = new Color(1, 1, 0, a);
             Debug.Log($"A:{a}");
             foreach (GameObject o in solution_objects)
             {
                 foreach (Renderer t in o.GetComponentsInChildren<Renderer>())
                 {
-                    t.material.SetColor("_Color", c);
+                    if (t.gameObject.CompareTag("solution"))
+                    {
+                        t.material.SetColor("_Color", c);
+                    }
                 }
             }
         }
