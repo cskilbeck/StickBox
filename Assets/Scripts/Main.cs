@@ -295,10 +295,10 @@ public class Main : MonoBehaviour
         l.reset_board();
         l.copy_blocks_from(level);
 
-        int move = l.active_solution.Count - 1;
+        int move = l.solution.Count - 1;
         while (move >= 0)
         {
-            int2 v = l.active_solution[move] * -1;
+            int2 v = l.solution[move] * -1;
             move -= 1;
             int distance;
             Level.move_result r = l.get_move_result(v, out distance);
@@ -425,7 +425,7 @@ public class Main : MonoBehaviour
 
     public void on_help_click()
     {
-        if (current_level.active_solution == null)
+        if (current_level.solution == null)
         {
             current_level.set_banner_text("Nope!");
         }
@@ -433,7 +433,7 @@ public class Main : MonoBehaviour
         {
             start_level(current_level);
             current_level.current_mode = Game.Mode.prepare_to_show_solution;
-            solution_turn_enumerator = current_level.active_solution.Count - 1;
+            solution_turn_enumerator = current_level.solution.Count - 1;
         }
     }
 
@@ -671,7 +671,7 @@ public class Main : MonoBehaviour
                     // right click moves to next phase (setting moves)
                     if (Input.GetMouseButtonDown(1))
                     {
-                        current_level.active_solution.Clear();
+                        current_level.solution.Clear();
                         move_direction = int2.zero;
                         cursor_quad.SetActive(false);
                         foreach (GameObject b in solution_objects)
@@ -712,7 +712,7 @@ public class Main : MonoBehaviour
                     {
                         Debug.Log("Movement!");
                         move_direction = start_movement;
-                        current_level.active_solution.Add(move_direction);
+                        current_level.solution.Add(move_direction);
                     }
                     if (move_direction.Equals(start_movement))
                     {
@@ -721,7 +721,7 @@ public class Main : MonoBehaviour
                     if (!fast_forward(current_level))
                     {
                         current_level.move_all_stuck_blocks(start_movement * -1);
-                        current_level.active_solution.RemoveAt(current_level.active_solution.Count - 1);
+                        current_level.solution.RemoveAt(current_level.solution.Count - 1);
                         move_direction = int2.zero;
                     }
                 }
@@ -759,7 +759,7 @@ public class Main : MonoBehaviour
                 }
                 else if (current_level.mode_time_elapsed > 0.333f)
                 {
-                    current_move_vector = current_level.active_solution[solution_turn_enumerator] * -1;
+                    current_move_vector = current_level.solution[solution_turn_enumerator] * -1;
                     solution_turn_enumerator -= 1;
                     current_move_result = current_level.get_move_result(current_move_vector, out move_distance);
                     move_start_time = Time.realtimeSinceStartup;

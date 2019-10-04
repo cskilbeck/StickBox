@@ -504,7 +504,7 @@ public class Game : MonoBehaviour
             case Mode.show_solution:
                 if (current_level.mode_time_elapsed > 0.333f)
                 {
-                    current_move_vector = current_level.active_solution[solution_turn_enumerator] * -1;
+                    current_move_vector = current_level.solution[solution_turn_enumerator] * -1;
                     solution_turn_enumerator -= 1;
                     current_move_result = current_level.get_move_result(current_move_vector, out move_distance);
                     move_start_time = Time.realtimeSinceStartup;
@@ -555,7 +555,7 @@ public class Game : MonoBehaviour
         cheating = true;
         start_level();
         current_level.current_mode = Mode.prepare_to_show_solution;
-        solution_turn_enumerator = current_level.active_solution.Count - 1;
+        solution_turn_enumerator = current_level.solution.Count - 1;
     }
 
     public void on_retry_button()
