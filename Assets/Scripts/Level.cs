@@ -19,9 +19,15 @@ public class Level : ScriptableObject
     public int width;                                                   // board size in grid squares
     public int height;
 
+    // these are deserialized from the loaded level
     public List<Block> start_blocks = new List<Block>();                // where they are at the beginning
     public List<int2> win_blocks = new List<int2>();                  // the solution
     public List<int2> solution = new List<int2>();                    // play these keys to solve it (only from the beginning)
+
+    // these are offset into the middle of the board and then used
+    public List<Block> active_start_blocks = new List<Block>();                // where they are at the beginning
+    public List<int2> active_win_blocks = new List<int2>();                  // the solution
+    public List<int2> active_solution = new List<int2>();                    // play these keys to solve it (only from the beginning)
 
     public GameObject banner_text;
     public AnimationCurve banner_text_movement_curve = AnimationCurve.EaseInOut(0, 0, 1, 1);
@@ -33,6 +39,26 @@ public class Level : ScriptableObject
     public get_board_coordinate_delegate get_board_coordinate;
 
     float banner_text_move_start_time;
+
+    //////////////////////////////////////////////////////////////////////
+
+    public void offset_board()
+    {
+        int2 offset = new int2((16 - width) / 2, (16 - height) / 2);
+        foreach (Block b in start_blocks)
+        {
+            Block n = new Block();
+            n.flags = b.flags;
+            n.position = b.position + offset;
+            active_start_blocks.Add(n);
+        }
+        foreach (int2 p in win_blocks)
+        {
+            active_win_blocks.Add(p + offset);
+        }
+        width = 16;
+        height = 16;
+    }
 
     //////////////////////////////////////////////////////////////////////
 
@@ -127,7 +153,7 @@ public class Level : ScriptableObject
 
             create_blocks();
 
-            int move = solution.Count - 1;
+            int move = active_solution.Count - 1;
             while (move >= 0)
             {
                 // count how many directions are possible at this stage
@@ -141,7 +167,7 @@ public class Level : ScriptableObject
                     }
                 }
 
-                int2 v = solution[move] * -1;
+                int2 v = active_solution[move] * -1;
                 move -= 1;
                 int distance;
                 move_result r = get_move_result(v, out distance);
@@ -152,7 +178,7 @@ public class Level : ScriptableObject
                 total_distance += distance * possible_moves;
                 if (r == move_result.hit_solution)
                 {
-                    return solution.Count * move_difficulty_constant + total_distance;
+                    return active_solution.Count * move_difficulty_constant + total_distance;
                 }
                 update_block_positions(v * distance);
                 update_hit_blocks(v);
@@ -161,7 +187,7 @@ public class Level : ScriptableObject
             {
                 throw new InvalidLevelException($"Invalid level!");
             }
-            return solution.Count * move_difficulty_constant + total_distance;
+            return active_solution.Count * move_difficulty_constant + total_distance;
         }
     }
 
@@ -234,9 +260,9 @@ public class Level : ScriptableObject
     {
         width = w;
         height = h;
-        start_blocks = new List<Block>();
-        win_blocks = new List<int2>();
-        solution = new List<int2>();
+        active_start_blocks = new List<Block>();
+        active_win_blocks = new List<int2>();
+        active_solution = new List<int2>();
         reset_board();
     }
 
@@ -262,18 +288,18 @@ public class Level : ScriptableObject
     {
         name = other.name;
         create_board(other.width, other.height);
-        foreach (Block v in other.start_blocks)
+        foreach (Block v in other.active_start_blocks)
         {
             v.game_object = null;
-            start_blocks.Add(v);
+            active_start_blocks.Add(v);
         }
-        foreach (int2 v in other.win_blocks)
+        foreach (int2 v in other.active_win_blocks)
         {
-            win_blocks.Add(v);
+            active_win_blocks.Add(v);
         }
-        foreach (int2 v in other.solution)
+        foreach (int2 v in other.active_solution)
         {
-            solution.Add(v);
+            active_solution.Add(v);
         }
     }
 
@@ -474,7 +500,7 @@ public class Level : ScriptableObject
         foreach (Block b in blocks)
         {
             bool found = false;
-            foreach (int2 v in win_blocks)
+            foreach (int2 v in active_win_blocks)
             {
                 if (v.Equals(b.position + offset))
                 {
@@ -615,7 +641,7 @@ public class Level : ScriptableObject
     {
         destroy_blocks();
         reset_board();
-        foreach (Block p in start_blocks)
+        foreach (Block p in active_start_blocks)
         {
             Color block_color = p.stuck ? stuck_color : moving_color;
             Block block = create_block(p.position, p.flags, block_color);

@@ -11,7 +11,9 @@ public static class File
     {
 #if UNITY_EDITOR
         string name = $"level_{level_index,2:00}";
-        return AssetDatabase.LoadAssetAtPath<Level>($"Assets/Resources/{name}.asset");
+        Level l = AssetDatabase.LoadAssetAtPath<Level>($"Assets/Resources/{name}.asset");
+        l.offset_board();
+        return l;
 #else
         string name = $"level_{level_index,2:00}";
         return Resources.Load<Level>(name);

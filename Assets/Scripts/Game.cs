@@ -164,7 +164,7 @@ public class Game : MonoBehaviour
 
     bool find_win_block(int2 b)
     {
-        foreach (int2 p in current_level.win_blocks)
+        foreach (int2 p in current_level.active_win_blocks)
         {
             if (p.Equals(b))
             {
@@ -276,7 +276,7 @@ public class Game : MonoBehaviour
         //destroy_boundary();
         destroy_level();
         current_level.create_blocks(stuck_color, moving_color);
-        foreach (int2 b in current_level.win_blocks)
+        foreach (int2 b in current_level.active_win_blocks)
         {
             GameObject s = create_solution_object(b);
             solution_objects.Add(s);
@@ -504,7 +504,7 @@ public class Game : MonoBehaviour
             case Mode.show_solution:
                 if (current_level.mode_time_elapsed > 0.333f)
                 {
-                    current_move_vector = current_level.solution[solution_turn_enumerator] * -1;
+                    current_move_vector = current_level.active_solution[solution_turn_enumerator] * -1;
                     solution_turn_enumerator -= 1;
                     current_move_result = current_level.get_move_result(current_move_vector, out move_distance);
                     move_start_time = Time.realtimeSinceStartup;
@@ -555,7 +555,7 @@ public class Game : MonoBehaviour
         cheating = true;
         start_level();
         current_level.current_mode = Mode.prepare_to_show_solution;
-        solution_turn_enumerator = current_level.solution.Count - 1;
+        solution_turn_enumerator = current_level.active_solution.Count - 1;
     }
 
     public void on_retry_button()
