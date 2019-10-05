@@ -7,40 +7,27 @@ public static class KeyboardInput
     //////////////////////////////////////////////////////////////////////
     // KEYBOARD / MOVEMENT
 
-    static KeyCode[] movement_keys = new KeyCode[] { KeyCode.LeftArrow, KeyCode.RightArrow, KeyCode.UpArrow, KeyCode.DownArrow };
-
-    static Dictionary<KeyCode, int2> moves = new Dictionary<KeyCode, int2> {
-        {  KeyCode.LeftArrow, Game.left },
-        {  KeyCode.RightArrow, Game.right },
-        {  KeyCode.UpArrow, Game.up },
-        {  KeyCode.DownArrow, Game.down },
-    };
-
-    readonly static int2[] compass_directions = new int2[4]
-    {
-        Game.up,
-        Game.right,
-        Game.down,
-        Game.left
-    };
-
-    public static int2 get_movement_from_keycode(KeyCode key)
-    {
-        if (moves.TryGetValue(key, out int2 dir))
-        {
-            return dir;
-        }
-        return int2.zero;
-    }
-
     public static int2 get_key_movement()
     {
-        foreach (KeyCode key in movement_keys)
+        if(SwipeInput.swipedDown)
         {
-            if (Input.GetKeyDown(key))
-            {
-                return get_movement_from_keycode(key);
-            }
+            Debug.Log("DOWN!");
+            return Game.down;
+        }
+        if(SwipeInput.swipedLeft)
+        {
+            Debug.Log("LEFT!");
+            return Game.left;
+        }
+        if(SwipeInput.swipedRight)
+        {
+            Debug.Log("RIGHT!");
+            return Game.right;
+        }
+        if(SwipeInput.swipedUp)
+        {
+            Debug.Log("UP!");
+            return Game.up;
         }
         return int2.zero;
     }

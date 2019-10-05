@@ -153,6 +153,7 @@ public class Game : MonoBehaviour
 
     public GameObject create_block_object(Color color)
     {
+        Debug.Log("Create block object!?");
         GameObject quad_object = GameObject.CreatePrimitive(PrimitiveType.Cube);
         quad_object.GetComponent<Renderer>().material = block_material;
         Main.set_color(quad_object, color);
@@ -430,7 +431,6 @@ public class Game : MonoBehaviour
         {
             float a = Mathf.Sin(current_level.game_time_elapsed * 50) * 0.025f + 0.05f;
             Color c = new Color(1, 1, 0, a);
-            Debug.Log($"A:{a}");
             foreach (GameObject o in solution_objects)
             {
                 foreach (Renderer t in o.GetComponentsInChildren<Renderer>())
@@ -457,8 +457,9 @@ public class Game : MonoBehaviour
                 if (!current_move_vector.Equals(int2.zero))
                 {
                     current_move_result = current_level.get_move_result(current_move_vector, out move_distance);
+                    Debug.Log($"MOVE: {current_move_result}");
                     move_start_time = Time.realtimeSinceStartup;
-                    move_end_time = move_start_time + (move_distance * 0.05f);
+                    move_end_time = move_start_time + (move_distance * 0.025f);
                     current_level.current_mode = Mode.maybe;
                 }
                 break;

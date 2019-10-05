@@ -25,18 +25,28 @@ public class Level : ScriptableObject
     public List<int2> solution = new List<int2>();                    // play these keys to solve it (only from the beginning)
 
     // these are offset into the middle of the board and then used
+    [NonSerialized]
     public List<Block> active_start_blocks = new List<Block>();                // where they are at the beginning
+
+    [NonSerialized]
     public List<int2> active_win_blocks = new List<int2>();                  // the solution
 
+    [NonSerialized]
     public GameObject banner_text;
+
+    [NonSerialized]
     public AnimationCurve banner_text_movement_curve = AnimationCurve.EaseInOut(0, 0, 1, 1);
 
     public delegate float3 get_board_coordinate_delegate(int2 p);
     public delegate GameObject create_block_object_delegate(Color c);
 
+    [NonSerialized]
     public create_block_object_delegate create_block_object;
+
+    [NonSerialized]
     public get_board_coordinate_delegate get_board_coordinate;
 
+    [NonSerialized]
     float banner_text_move_start_time;
 
     //////////////////////////////////////////////////////////////////////
@@ -44,6 +54,7 @@ public class Level : ScriptableObject
     public void offset_board()
     {
         int2 offset = new int2((16 - width) / 2, (16 - height) / 2);
+        active_start_blocks = new List<Block>();
         foreach (Block b in start_blocks)
         {
             Block n = new Block();
@@ -51,6 +62,7 @@ public class Level : ScriptableObject
             n.position = b.position + offset;
             active_start_blocks.Add(n);
         }
+        active_win_blocks = new List<int2>();
         foreach (int2 p in win_blocks)
         {
             active_win_blocks.Add(p + offset);
@@ -61,6 +73,7 @@ public class Level : ScriptableObject
 
     //////////////////////////////////////////////////////////////////////
 
+    [NonSerialized]
     public static readonly Dictionary<Game.Mode, string> mode_banners = new Dictionary<Game.Mode, string>()
     {
         { Game.Mode.failed, "Failed!" },
@@ -73,9 +86,13 @@ public class Level : ScriptableObject
         { Game.Mode.prepare_to_show_solution, "Solution!" }
     };
 
+    [NonSerialized]
     Game.Mode _current_mode;
 
+    [NonSerialized]
     public float mode_timer;
+
+    [NonSerialized]
     public float game_start_time;
 
     //////////////////////////////////////////////////////////////////////
@@ -279,27 +296,6 @@ public class Level : ScriptableObject
     {
         name = $"Level {w},{h}";
         create_board(w, h);
-    }
-
-    //////////////////////////////////////////////////////////////////////
-
-    public Level(Level other)
-    {
-        name = other.name;
-        create_board(other.width, other.height);
-        foreach (Block v in other.active_start_blocks)
-        {
-            v.game_object = null;
-            active_start_blocks.Add(v);
-        }
-        foreach (int2 v in other.active_win_blocks)
-        {
-            active_win_blocks.Add(v);
-        }
-        foreach (int2 v in other.solution)
-        {
-            solution.Add(v);
-        }
     }
 
     //////////////////////////////////////////////////////////////////////
